@@ -1,0 +1,56 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "app.py"
+      - "auto_analysis_launcher.py"
+      - "auto_analysis_windows.spec"
+      - "split_exam_questions.py"
+      - "geo_cut_predictor.py"
+      - "templates/**"
+      - "static/**"
+      - "design-system/**"
+      - "classification_units.json"
+      - "geo_cut_model.json"
+      - "ebsi_geo_data.json"
+      - "archives/**"
+      - "samples/**"
+      - "requirements.txt"
+      - ".github/workflows/build-windows-exe.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+
+      - name: Build executable
+        run: |
+          python -m PyInstaller --noconfirm --clean auto_analysis_windows.spec
+
+      - name: Zip executable folder
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/Auto Analysis/*" -DestinationPath "dist/Auto_Analysis_Windows_EXE.zip" -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Auto_Analysis_Windows_EXE
+          path: dist/Auto_Analysis_Windows_EXE.zip

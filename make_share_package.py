@@ -22,6 +22,8 @@ PACKAGE_DIR = DIST_DIR / PACKAGE_NAME
 ZIP_PATH = DIST_DIR / "Auto_Analysis_공유용.zip"
 SAMPLE_ARCHIVE_TITLE = "4월 NEW"
 SECRET_PATTERN = re.compile(r"AIza[0-9A-Za-z_-]{20,}")
+LOCAL_ARCHIVES_DIR = ROOT / "archives"
+SAMPLE_ARCHIVES_DIR = ROOT / "samples" / "archives"
 BUILD_CACHE_DIR = ROOT / ".build_cache"
 WINDOWS_PYTHON_VERSION = "3.11.9"
 WINDOWS_PYTHON_ABI = "311"
@@ -200,7 +202,8 @@ def copy_runtime_files() -> None:
 
 
 def sample_archive_item() -> dict[str, Any]:
-    index_path = ROOT / "archives" / "index.json"
+    archives_dir = LOCAL_ARCHIVES_DIR if (LOCAL_ARCHIVES_DIR / "index.json").exists() else SAMPLE_ARCHIVES_DIR
+    index_path = archives_dir / "index.json"
     if not index_path.exists():
         raise FileNotFoundError("archives/index.json 파일이 없어 샘플을 포함할 수 없습니다.")
 
@@ -220,7 +223,8 @@ def sanitize_archive_payload(payload: dict[str, Any], archive_id: str) -> dict[s
 def copy_sample_archive() -> None:
     item = sample_archive_item()
     archive_id = str(item["archive_id"])
-    src_dir = ROOT / "archives" / archive_id
+    archives_dir = LOCAL_ARCHIVES_DIR if (LOCAL_ARCHIVES_DIR / archive_id).exists() else SAMPLE_ARCHIVES_DIR
+    src_dir = archives_dir / archive_id
     if not src_dir.exists():
         raise FileNotFoundError(f"샘플 아카이브 폴더를 찾지 못했습니다: {src_dir}")
 

@@ -1,0 +1,399 @@
+[
+  {
+    "archive_id": "archive_20260426_151517_3ed467ea",
+    "job_id": "csv_20260426_151340_f8bc6595",
+    "created_at": "2026-04-26T15:15:17",
+    "title": "4월 NEW",
+    "subject": "",
+    "exam_date": "",
+    "memo": "",
+    "image_count": 20,
+    "solution_count": 20,
+    "cut_payload": {
+      "subject": "한국지리",
+      "mode": "national",
+      "points": [
+        "3",
+        "2",
+        "2",
+        "3",
+        "2",
+        "3",
+        "2",
+        "3",
+        "2",
+        "2",
+        "3",
+        "3",
+        "2",
+        "2",
+        "3",
+        "2",
+        "2",
+        "3",
+        "3",
+        "3"
+      ],
+      "rates": [
+        "85",
+        "85",
+        "65",
+        "80",
+        "65",
+        "65",
+        "60",
+        "45",
+        "50",
+        "50",
+        "60",
+        "60",
+        "45",
+        "65",
+        "30",
+        "55",
+        "65",
+        "65",
+        "40",
+        "35"
+      ]
+    },
+    "cut_result": {
+      "conversion_rows": [
+        {
+          "academy_rate": 100,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "100.0%",
+          "national_rate": 85,
+          "points": 3,
+          "question": 1
+        },
+        {
+          "academy_rate": 100,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "100.0%",
+          "national_rate": 85,
+          "points": 2,
+          "question": 2
+        },
+        {
+          "academy_rate": 86.10631499133449,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "86.1%",
+          "national_rate": 65,
+          "points": 2,
+          "question": 3
+        },
+        {
+          "academy_rate": 98.15,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "98.2%",
+          "national_rate": 80,
+          "points": 3,
+          "question": 4
+        },
+        {
+          "academy_rate": 86.10631499133449,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "86.1%",
+          "national_rate": 65,
+          "points": 2,
+          "question": 5
+        },
+        {
+          "academy_rate": 86.10631499133449,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "86.1%",
+          "national_rate": 65,
+          "points": 3,
+          "question": 6
+        },
+        {
+          "academy_rate": 79.77555218709398,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "79.8%",
+          "national_rate": 60,
+          "points": 2,
+          "question": 7
+        },
+        {
+          "academy_rate": 54.88442799369207,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "54.9%",
+          "national_rate": 45,
+          "points": 3,
+          "question": 8
+        },
+        {
+          "academy_rate": 63.579953443048936,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "63.6%",
+          "national_rate": 50,
+          "points": 2,
+          "question": 9
+        },
+        {
+          "academy_rate": 63.579953443048936,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "63.6%",
+          "national_rate": 50,
+          "points": 2,
+          "question": 10
+        },
+        {
+          "academy_rate": 79.77555218709398,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "79.8%",
+          "national_rate": 60,
+          "points": 3,
+          "question": 11
+        },
+        {
+          "academy_rate": 79.77555218709398,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "79.8%",
+          "national_rate": 60,
+          "points": 3,
+          "question": 12
+        },
+        {
+          "academy_rate": 54.88442799369207,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "54.9%",
+          "national_rate": 45,
+          "points": 2,
+          "question": 13
+        },
+        {
+          "academy_rate": 86.10631499133449,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "86.1%",
+          "national_rate": 65,
+          "points": 2,
+          "question": 14
+        },
+        {
+          "academy_rate": 30,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "30.0%",
+          "national_rate": 30,
+          "points": 3,
+          "question": 15
+        },
+        {
+          "academy_rate": 72.90239669971245,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "72.9%",
+          "national_rate": 55,
+          "points": 2,
+          "question": 16
+        },
+        {
+          "academy_rate": 86.10631499133449,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "86.1%",
+          "national_rate": 65,
+          "points": 2,
+          "question": 17
+        },
+        {
+          "academy_rate": 86.10631499133449,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "86.1%",
+          "national_rate": 65,
+          "points": 3,
+          "question": 18
+        },
+        {
+          "academy_rate": 47.252839470184114,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "47.3%",
+          "national_rate": 40,
+          "points": 3,
+          "question": 19
+        },
+        {
+          "academy_rate": 39.49993500866552,
+          "academy_rate_is_upper_bound": false,
+          "academy_rate_label": "39.5%",
+          "national_rate": 35,
+          "points": 3,
+          "question": 20
+        }
+      ],
+      "estimated_academy_rates": [
+        {
+          "is_upper_bound": false,
+          "label": "100.0%",
+          "value": 100
+        },
+        {
+          "is_upper_bound": false,
+          "label": "100.0%",
+          "value": 100
+        },
+        {
+          "is_upper_bound": false,
+          "label": "86.1%",
+          "value": 86.10631499133449
+        },
+        {
+          "is_upper_bound": false,
+          "label": "98.2%",
+          "value": 98.15
+        },
+        {
+          "is_upper_bound": false,
+          "label": "86.1%",
+          "value": 86.10631499133449
+        },
+        {
+          "is_upper_bound": false,
+          "label": "86.1%",
+          "value": 86.10631499133449
+        },
+        {
+          "is_upper_bound": false,
+          "label": "79.8%",
+          "value": 79.77555218709398
+        },
+        {
+          "is_upper_bound": false,
+          "label": "54.9%",
+          "value": 54.88442799369207
+        },
+        {
+          "is_upper_bound": false,
+          "label": "63.6%",
+          "value": 63.579953443048936
+        },
+        {
+          "is_upper_bound": false,
+          "label": "63.6%",
+          "value": 63.579953443048936
+        },
+        {
+          "is_upper_bound": false,
+          "label": "79.8%",
+          "value": 79.77555218709398
+        },
+        {
+          "is_upper_bound": false,
+          "label": "79.8%",
+          "value": 79.77555218709398
+        },
+        {
+          "is_upper_bound": false,
+          "label": "54.9%",
+          "value": 54.88442799369207
+        },
+        {
+          "is_upper_bound": false,
+          "label": "86.1%",
+          "value": 86.10631499133449
+        },
+        {
+          "is_upper_bound": false,
+          "label": "30.0%",
+          "value": 30
+        },
+        {
+          "is_upper_bound": false,
+          "label": "72.9%",
+          "value": 72.90239669971245
+        },
+        {
+          "is_upper_bound": false,
+          "label": "86.1%",
+          "value": 86.10631499133449
+        },
+        {
+          "is_upper_bound": false,
+          "label": "86.1%",
+          "value": 86.10631499133449
+        },
+        {
+          "is_upper_bound": false,
+          "label": "47.3%",
+          "value": 47.252839470184114
+        },
+        {
+          "is_upper_bound": false,
+          "label": "39.5%",
+          "value": 39.49993500866552
+        }
+      ],
+      "estimated_national_rates": [
+        85,
+        85,
+        65,
+        80,
+        65,
+        65,
+        60,
+        45,
+        50,
+        50,
+        60,
+        60,
+        45,
+        65,
+        30,
+        55,
+        65,
+        65,
+        40,
+        35
+      ],
+      "features": {
+        "easy5_rate": 76.15384615384616,
+        "hard15_rate": 51.75675675675676,
+        "hard15_sd": 11.695241364010164,
+        "ind_sd": 5.330806693175058,
+        "mean": 29.049999999999997,
+        "nat_sd": 12.517441174723432,
+        "rate_sd": 15.391231269784754,
+        "under40_points": 6,
+        "under50_points": 14,
+        "weighted_rate": 58.099999999999994
+      },
+      "mae": 0.8943815061564451,
+      "mode": "national",
+      "predicted_cut": 46.96080727544948,
+      "predictions": {
+        "1": {
+          "mae": 0.8943815061564451,
+          "predicted_cut": 46.96080727544948,
+          "range_high": 50,
+          "range_low": 45,
+          "rmse": 1.1435126231151282,
+          "suggested_cut": 47
+        },
+        "2": {
+          "mae": 0.6493820023606872,
+          "predicted_cut": 44.25563533258956,
+          "range_high": 46,
+          "range_low": 43,
+          "rmse": 0.8006446467905941,
+          "suggested_cut": 44
+        },
+        "3": {
+          "mae": 0.6898478896979949,
+          "predicted_cut": 41.682061595211195,
+          "range_high": 43,
+          "range_low": 40,
+          "rmse": 0.817518560301777,
+          "suggested_cut": 42
+        }
+      },
+      "range_high": 50,
+      "range_low": 45,
+      "rmse": 1.1435126231151282,
+      "subject": "한국지리",
+      "suggested_cut": 47,
+      "warnings": []
+    },
+    "archive_dir": "archives/archive_20260426_151517_3ed467ea",
+    "snapshot_dir": "archives/archive_20260426_151517_3ed467ea/job",
+    "updated_at": "2026-04-26T15:33:47"
+  }
+]

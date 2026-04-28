@@ -27,6 +27,18 @@ macOS에서는 `start_gui.command`를 실행해도 됩니다.
 
 프로그래밍에 익숙하지 않은 팀원에게는 아래 방식이 가장 단순합니다.
 
+### Windows EXE
+
+가장 쉬운 공유 방식은 GitHub Actions에서 생성되는 Windows EXE ZIP입니다.
+
+1. GitHub `Actions` 탭에서 `Build Windows EXE` workflow를 실행합니다.
+2. 완료된 run의 artifact `Auto_Analysis_Windows_EXE`를 내려받습니다.
+3. ZIP을 풀고 `Auto Analysis.exe`를 실행합니다.
+
+이 방식은 Python 설치가 필요 없습니다.
+
+### Local ZIP
+
 공유 ZIP은 아래 명령으로 만듭니다.
 
 ```bash

@@ -59,16 +59,34 @@ class ApiRequestError(ValueError):
         self.status_code = status_code
 
 
-ROOT = Path(__file__).resolve().parent
-DESIGN_DIR = ROOT / "design-system"
+SOURCE_ROOT = Path(__file__).resolve().parent
+BUNDLE_ROOT = Path(getattr(sys, "_MEIPASS", SOURCE_ROOT))
+ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else SOURCE_ROOT
+DESIGN_DIR = BUNDLE_ROOT / "design-system"
 RUNS_DIR = ROOT / "gui_runs"
 ARCHIVES_DIR = ROOT / "archives"
 LOCAL_SETTINGS_PATH = ROOT / "local_settings.json"
-CLASSIFICATION_UNITS_PATH = ROOT / "classification_units.json"
+CLASSIFICATION_UNITS_PATH = BUNDLE_ROOT / "classification_units.json"
+BUNDLED_ARCHIVES_DIR = BUNDLE_ROOT / "archives"
 RUNS_DIR.mkdir(exist_ok=True)
 ARCHIVES_DIR.mkdir(exist_ok=True)
 
-app = Flask(__name__, static_folder="static", template_folder="templates")
+
+def seed_archives_from_bundle() -> None:
+    if not getattr(sys, "frozen", False):
+        return
+    if not BUNDLED_ARCHIVES_DIR.exists() or (ARCHIVES_DIR / "index.json").exists():
+        return
+    shutil.copytree(BUNDLED_ARCHIVES_DIR, ARCHIVES_DIR, dirs_exist_ok=True)
+
+
+seed_archives_from_bundle()
+
+app = Flask(
+    __name__,
+    static_folder=str(BUNDLE_ROOT / "static"),
+    template_folder=str(BUNDLE_ROOT / "templates"),
+)
 app.config["MAX_CONTENT_LENGTH"] = 80 * 1024 * 1024
 
 SOLUTION_COLUMNS = [

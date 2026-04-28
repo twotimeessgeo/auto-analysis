@@ -1,0 +1,31 @@
+{
+  "job_id": "csv_20260426_151340_f8bc6595",
+  "input": "manual_images",
+  "count": 20,
+  "kind": "manual_images",
+  "updated_at": "2026-04-26T15:15:06",
+  "expected_questions": 20,
+  "output_dir": "archives/archive_20260426_151517_3ed467ea/job/questions",
+  "sources": [
+    "q01.png",
+    "q02.png",
+    "q03.png",
+    "q04.png",
+    "q05.png",
+    "q06.png",
+    "q07.png",
+    "q08.png",
+    "q09.png",
+    "q10.png",
+    "q11.png",
+    "q12.png",
+    "q13.png",
+    "q14.png",
+    "q15.png",
+    "q16.png",
+    "q17.png",
+    "q18.png",
+    "q19.png",
+    "q20.png"
+  ]
+}

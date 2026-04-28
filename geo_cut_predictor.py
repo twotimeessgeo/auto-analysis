@@ -6,6 +6,7 @@ import json
 import math
 import hashlib
 import re
+import sys
 import unicodedata
 from bisect import bisect_left, bisect_right
 from functools import lru_cache
@@ -14,9 +15,10 @@ from statistics import NormalDist
 from typing import Iterable
 
 
-ROOT = Path(__file__).resolve().parent
-MODEL_PATH = ROOT / "geo_cut_model.json"
-EBSI_PATH = ROOT / "ebsi_geo_data.json"
+SOURCE_ROOT = Path(__file__).resolve().parent
+BUNDLE_ROOT = Path(getattr(sys, "_MEIPASS", SOURCE_ROOT))
+MODEL_PATH = BUNDLE_ROOT / "geo_cut_model.json"
+EBSI_PATH = BUNDLE_ROOT / "ebsi_geo_data.json"
 QUESTION_IMAGE_ROOTS = (
     {
         "subject": "세계지리",
