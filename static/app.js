@@ -37,6 +37,7 @@ const csvMeta = document.querySelector("#csvMeta");
 const solutionsStatusBadge = document.querySelector("#solutionsStatusBadge");
 const solutionMatchRow = document.querySelector("#solutionMatchRow");
 const solutionViewer = document.querySelector("#solutionViewer");
+const solutionAnswerDistribution = document.querySelector("#solutionAnswerDistribution");
 const solutionNav = document.querySelector("#solutionNav");
 const solutionImage = document.querySelector("#solutionImage");
 const solutionImageEmpty = document.querySelector("#solutionImageEmpty");
@@ -1374,6 +1375,10 @@ function resetSolutions(keepPanel = false) {
   solutionMetrics.innerHTML = "";
   solutionDetails.innerHTML = "";
   solutionOverview.hidden = true;
+  if (solutionAnswerDistribution) {
+    solutionAnswerDistribution.hidden = true;
+    solutionAnswerDistribution.innerHTML = "";
+  }
   if (solutionQualityStrip) {
     solutionQualityStrip.hidden = true;
     solutionQualityStrip.innerHTML = "";
@@ -1681,6 +1686,10 @@ function setClassificationField(solution, key, value, options = {}) {
   if (key === "정답" && Number(solution.number) === Number(currentSolutionNumber)) {
     solutionAnswer.textContent = `정답 ${nextValue || "-"}`;
   }
+  if (key === "정답") {
+    updateSolutionNavAnswer(solution, nextValue);
+    renderAnswerDistribution();
+  }
   if (key === "선택과목") {
     classificationSubunitKeys.forEach((subunitKey) => {
       if (!solution.fields[subunitKey]) solution.fields[subunitKey] = "";
@@ -1959,6 +1968,67 @@ function solutionFlagLabel(solution) {
   return labels.join(" · ");
 }
 
+function updateSolutionNavAnswer(solution, value = null) {
+  if (!solutionNav || !solution) return;
+  const button = solutionNav.querySelector(`[data-number="${solution.number}"]`);
+  const answer = button?.querySelector("[data-solution-nav-answer]");
+  if (answer) answer.textContent = value ? `정답 ${value}` : "정답 -";
+}
+
+function answerDistribution() {
+  const counts = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 };
+  let missing = 0;
+  currentSolutions.forEach((solution) => {
+    const answer = normalizeAnswerValue(solution.fields?.["정답"]);
+    if (counts[answer] !== undefined) {
+      counts[answer] += 1;
+    } else {
+      missing += 1;
+    }
+  });
+  return { counts, missing, total: currentSolutions.length };
+}
+
+function renderAnswerDistribution() {
+  if (!solutionAnswerDistribution) return;
+  if (!currentSolutions.length) {
+    solutionAnswerDistribution.hidden = true;
+    solutionAnswerDistribution.innerHTML = "";
+    return;
+  }
+
+  const { counts, missing, total } = answerDistribution();
+  solutionAnswerDistribution.innerHTML = "";
+
+  const head = document.createElement("div");
+  head.className = "solution-answer-head";
+  head.innerHTML = `
+    <p class="tw-kicker">ANSWER COUNT</p>
+    <h3 class="app-subtitle">정답 분포</h3>
+  `;
+
+  const grid = document.createElement("div");
+  grid.className = "solution-answer-grid";
+  ["1", "2", "3", "4", "5"].forEach((choice) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "solution-answer-count";
+    item.innerHTML = `<span>${choice}번</span><strong>${counts[choice]}개</strong>`;
+    item.addEventListener("click", () => {
+      const matched = currentSolutions.find((solution) => normalizeAnswerValue(solution.fields?.["정답"]) === choice);
+      if (matched) selectSolutionByNumber(matched.number);
+    });
+    grid.appendChild(item);
+  });
+
+  const meta = document.createElement("span");
+  meta.className = "solution-answer-meta";
+  meta.textContent = missing ? `총 ${total}문항 · 미입력 ${missing}개` : `총 ${total}문항`;
+
+  solutionAnswerDistribution.append(head, grid, meta);
+  solutionAnswerDistribution.hidden = false;
+}
+
 function syncSolutionNavQuality() {
   currentSolutions.forEach((solution) => {
     const button = solutionNav.querySelector(`[data-number="${solution.number}"]`);
@@ -2077,6 +2147,10 @@ function setSolutionField(solution, key, value, options = {}) {
   }
   if (key === "정답" && isCurrentSolution) {
     solutionAnswer.textContent = `정답 ${nextValue || "-"}`;
+  }
+  if (key === "정답") {
+    updateSolutionNavAnswer(solution, nextValue);
+    renderAnswerDistribution();
   }
   setSolutionsDirty(true);
   return nextValue;
@@ -2326,6 +2400,7 @@ function renderSolutions(data, shouldApplyCut = true) {
     const number = document.createElement("strong");
     number.textContent = `${solution.number}번`;
     const answer = document.createElement("span");
+    answer.dataset.solutionNavAnswer = "true";
     answer.textContent = fields["정답"] ? `정답 ${fields["정답"]}` : "정답 -";
     const flagText = solutionFlagLabel(solution);
     const flag = document.createElement("span");
@@ -2340,6 +2415,7 @@ function renderSolutions(data, shouldApplyCut = true) {
   });
 
   renderSolutionOverview();
+  renderAnswerDistribution();
   renderClassificationOverview();
   solutionViewer.hidden = false;
   setSolutionsStatus("완료", true);
