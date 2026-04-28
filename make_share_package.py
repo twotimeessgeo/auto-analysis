@@ -30,6 +30,7 @@ RUNTIME_FILES = [
     "requirements.txt",
     "start_gui.command",
     "start_gui_windows.bat",
+    "prepare_windows_venv.ps1",
     "처음_읽어주세요.txt",
 ]
 

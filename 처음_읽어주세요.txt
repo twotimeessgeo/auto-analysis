@@ -10,6 +10,7 @@ Auto Analysis 처음 실행 안내
 - 검은 창은 서버 창입니다. 사용하는 동안 닫지 마세요.
 - 브라우저가 자동으로 열리지 않으면 http://127.0.0.1:5057/ 을 직접 열면 됩니다.
 - Python을 찾지 못한다는 메시지가 나오면 Python 3.11 이상을 설치하고 다시 실행하세요.
+- 이미 Python을 설치했다면 Python 설치 프로그램을 다시 실행한 뒤 Modify > Add python.exe to PATH를 선택하세요.
 
 3. macOS에서 실행
 - "Auto Analysis 실행 - macOS.command"를 더블클릭하세요.

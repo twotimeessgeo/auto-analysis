@@ -12,6 +12,7 @@ Gemini API 키는 포함되어 있지 않습니다.
 
 Python을 찾지 못한다는 메시지가 나오면 Python 3.11 이상을 설치한 뒤 다시 실행하세요.
 설치할 때 `Add python.exe to PATH`를 체크하면 가장 쉽습니다.
+이미 Python을 설치했다면 설치 프로그램을 다시 실행한 뒤 `Modify > Add python.exe to PATH`를 선택하세요.
 
 ## macOS
 
