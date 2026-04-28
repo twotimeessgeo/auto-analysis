@@ -91,6 +91,7 @@ def configure_windows_embed_paths(runtime_dir: Path) -> None:
         "\n".join([
             zip_line,
             ".",
+            "../..",
             "Lib/site-packages",
             "import site",
             "",
