@@ -36,6 +36,7 @@ RUNTIME_FILES = [
 RUNTIME_DIRS = [
     "templates",
     "static",
+    "design-system",
 ]
 
 
