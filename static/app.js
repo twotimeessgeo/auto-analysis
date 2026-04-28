@@ -73,8 +73,6 @@ const archiveList = document.querySelector("#archiveList");
 const cutForm = document.querySelector("#cutForm");
 const cutSubject = document.querySelector("#cutSubject");
 const cutMode = document.querySelector("#cutMode");
-const historyExamSelect = document.querySelector("#historyExamSelect");
-const loadHistoryButton = document.querySelector("#loadHistoryButton");
 const cutModelBadge = document.querySelector("#cutModelBadge");
 const cutRelation = document.querySelector("#cutRelation");
 const cutPaste = document.querySelector("#cutPaste");
@@ -86,7 +84,6 @@ const cutCardGrid = document.querySelector("#cutCardGrid");
 const cutMean = document.querySelector("#cutMean");
 const cutError = document.querySelector("#cutError");
 const cutScoreTable = document.querySelector("#cutScoreTable");
-const cutHistoryTable = document.querySelector("#cutHistoryTable");
 const cutRateTable = document.querySelector("#cutRateTable");
 const cutWarning = document.querySelector("#cutWarning");
 const geminiGenerationPanel = document.querySelector("#geminiGenerationPanel");
@@ -143,8 +140,6 @@ const appSelectStates = new WeakMap();
 let cutModel = null;
 let cutModelReady = null;
 let lastCutResult = null;
-let historicalExams = [];
-let lastLoadedHistoryId = null;
 let questionBankReady = false;
 let questionAvailableExams = [];
 
@@ -530,13 +525,6 @@ function formatPercentValue(value) {
   return Number.isFinite(number) ? `${formatFixed(number)}%` : "-";
 }
 
-function formatSigned(value) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return "-";
-  if (number > 0) return `+${number}`;
-  return String(number);
-}
-
 function rateInputs() {
   return Array.from(cutInputGrid.querySelectorAll("[data-rate-input]"));
 }
@@ -571,59 +559,6 @@ function fillDefaultPoints() {
   pointInputs().forEach((input, index) => {
     input.value = points[index] ?? "";
   });
-}
-
-function renderHistoryExamSelect(selectedId = null) {
-  if (!historyExamSelect) return;
-  const subjectExams = historicalExams.filter((exam) => exam.subject === cutSubject.value);
-  historyExamSelect.innerHTML = "";
-  if (!subjectExams.length) {
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "불러올 시험 없음";
-    historyExamSelect.appendChild(option);
-    historyExamSelect.disabled = true;
-    loadHistoryButton.disabled = true;
-    refreshAppSelect(historyExamSelect);
-    return;
-  }
-
-  historyExamSelect.disabled = false;
-  loadHistoryButton.disabled = false;
-  subjectExams.forEach((exam) => {
-    const option = document.createElement("option");
-    const cuts = exam.cuts || {};
-    const inferred = exam.inferred_count ? ` · 보충 ${exam.inferred_count}문항` : "";
-    option.value = exam.id;
-    option.textContent = `${exam.label} · ${cuts["1"]}/${cuts["2"]}/${cuts["3"]}${inferred}`;
-    historyExamSelect.appendChild(option);
-  });
-  if (selectedId && subjectExams.some((exam) => exam.id === selectedId)) {
-    historyExamSelect.value = selectedId;
-  }
-  refreshAppSelect(historyExamSelect);
-}
-
-function selectedHistoryExam() {
-  return historicalExams.find((exam) => exam.id === historyExamSelect.value);
-}
-
-function applyHistoryExam() {
-  const exam = selectedHistoryExam();
-  if (!exam) return;
-  lastLoadedHistoryId = exam.id;
-  setNativeSelectValue(cutSubject, exam.subject);
-  setNativeSelectValue(cutMode, "national");
-  renderHistoryExamSelect(exam.id);
-  renderRelation();
-  pointInputs().forEach((input, index) => {
-    input.value = exam.points[index] ?? "";
-  });
-  rateInputs().forEach((input, index) => {
-    input.value = exam.rates[index] ?? "";
-  });
-  cutPaste.value = exam.rates.map((rate) => formatFixed(rate)).join(", ");
-  runCutPrediction();
 }
 
 function renderRelation() {
@@ -728,23 +663,6 @@ function renderCutResult(data) {
       </div>
     `).join("")}
   `;
-  cutHistoryTable.innerHTML = `
-    <div class="cut-history-head">
-      <span>시험</span><span>평균·표편</span><span>실제 컷</span><span>현재-실제</span>
-    </div>
-    ${(data.historical_matches || []).map((exam) => {
-      const cuts = exam.cuts || {};
-      const diffs = exam.cut_diffs || {};
-      return `
-        <div class="cut-history-match${exam.id === lastLoadedHistoryId ? " is-selected" : ""}">
-          <span>${exam.exam_year}.${exam.month}</span>
-          <span>${formatFixed(exam.mean)} · ${formatFixed(exam.nat_sd)}</span>
-          <span>${cuts["1"]}/${cuts["2"]}/${cuts["3"]}</span>
-          <span>${formatSigned(diffs["1"])} / ${formatSigned(diffs["2"])} / ${formatSigned(diffs["3"])}</span>
-        </div>
-      `;
-    }).join("")}
-  `;
   cutRateTable.innerHTML = `
     <div class="cut-rate-head">
       <span>문항</span><span>배점</span><span>전국</span><span>재종 환산</span>
@@ -810,18 +728,6 @@ async function loadCutModel() {
   }
 }
 
-async function loadHistoricalExams() {
-  try {
-    const response = await fetch("/api/historical-exams");
-    const data = await response.json();
-    historicalExams = data.exams || [];
-    renderHistoryExamSelect(lastLoadedHistoryId);
-  } catch (error) {
-    historicalExams = [];
-    renderHistoryExamSelect();
-  }
-}
-
 function fieldValue(element) {
   return String(element?.value || "").trim();
 }
@@ -833,11 +739,8 @@ function renderQuestionExamSelect(selectedKey = questionExamSelect.value) {
   questionExamSelect.innerHTML = '<option value="">시험 전체</option>';
   exams.forEach((exam) => {
     const option = document.createElement("option");
-    const status = `${exam.exact_count}실측`;
-    const inferred = exam.inferred_count ? ` · ${exam.inferred_count}보충` : "";
-    const unmatched = exam.unmatched_count ? ` · ${exam.unmatched_count}정보없음` : "";
     option.value = exam.key;
-    option.textContent = `${exam.label} · ${status}${inferred}${unmatched}`;
+    option.textContent = exam.label;
     questionExamSelect.appendChild(option);
   });
   if (selectedKey && exams.some((exam) => exam.key === selectedKey)) {
@@ -3323,14 +3226,12 @@ resetButton.addEventListener("click", () => {
 
 cutSubject.addEventListener("change", () => {
   fillDefaultPoints();
-  renderHistoryExamSelect();
   renderRelation();
   syncAppSelects(cutForm);
 });
 
 fillDefaultPointsButton.addEventListener("click", fillDefaultPoints);
 applyPasteButton.addEventListener("click", parseRatesFromPaste);
-loadHistoryButton.addEventListener("click", applyHistoryExam);
 
 cutForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -3368,5 +3269,4 @@ cutModelReady = loadCutModel();
 restoreGeminiProfile();
 loadGeminiDefaults();
 loadUnitCatalog();
-loadHistoricalExams();
 loadArchives();

@@ -31,7 +31,6 @@ from werkzeug.utils import secure_filename
 
 from geo_cut_predictor import (
     PredictionError,
-    historical_exam_payload,
     model_public_payload,
     predict_cut,
     question_image_path,
@@ -2114,11 +2113,6 @@ def run_file(filename: str):
 @app.get("/api/cut-model")
 def api_cut_model():
     return jsonify(model_public_payload())
-
-
-@app.get("/api/historical-exams")
-def api_historical_exams():
-    return jsonify(historical_exam_payload())
 
 
 @app.get("/api/question-search")

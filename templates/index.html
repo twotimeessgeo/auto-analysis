@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/design-system/base.css" />
     <link rel="stylesheet" href="/design-system/components.css" />
     <link rel="stylesheet" href="/design-system/patterns.css" />
-    <link rel="stylesheet" href="/static/app.css?v=30" />
+    <link rel="stylesheet" href="/static/app.css?v=31" />
   </head>
   <body>
     <main class="tw-page app-page">
@@ -344,17 +344,6 @@
             </button>
           </div>
 
-          <div class="cut-history-row">
-            <label class="tw-field">
-              <span>과거 시험 DB</span>
-              <select id="historyExamSelect"></select>
-            </label>
-            <button class="tw-button" type="button" id="loadHistoryButton">
-              <i data-lucide="database"></i>
-              <span>불러오기</span>
-            </button>
-          </div>
-
           <div class="cut-input-grid" id="cutInputGrid"></div>
 
           <div class="tw-row app-actions">
@@ -384,16 +373,6 @@
               <span class="app-collapse-label">펼치기</span>
             </summary>
             <div class="cut-score-table" id="cutScoreTable"></div>
-          </details>
-          <details class="cut-result-section app-collapse">
-            <summary class="app-collapse-summary">
-              <div>
-                <p class="tw-kicker">HISTORICAL COMPARISON</p>
-                <h3 class="cut-subtitle">유사 과거 시험 비교</h3>
-              </div>
-              <span class="app-collapse-label">펼치기</span>
-            </summary>
-            <div class="cut-history-table" id="cutHistoryTable"></div>
           </details>
           <details class="cut-result-section app-collapse">
             <summary class="app-collapse-summary">
@@ -732,6 +711,6 @@
     </main>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script src="/static/app.js?v=35"></script>
+    <script src="/static/app.js?v=36"></script>
   </body>
 </html>
