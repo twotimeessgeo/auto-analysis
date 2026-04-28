@@ -33,12 +33,12 @@ macOS에서는 `start_gui.command`를 실행해도 됩니다.
 python3 make_share_package.py
 ```
 
-그러면 `dist/Auto_Analysis_공유용.zip`이 생성됩니다. 이 ZIP에는 실행에 필요한 파일과 샘플 `4월 NEW` 하나만 들어가며, Gemini API 키는 포함되지 않습니다.
+그러면 `dist/Auto_Analysis_공유용.zip`이 생성됩니다. 이 ZIP에는 Windows용 내장 Python, 실행에 필요한 파일, 샘플 `4월 NEW` 하나만 들어가며, Gemini API 키는 포함되지 않습니다.
 
 팀원 사용 방법:
 
 1. `Auto_Analysis_공유용.zip`을 풀어 둡니다.
-2. Windows 사용자는 `Auto Analysis 실행 - Windows.bat`을 더블클릭합니다.
+2. Windows 사용자는 `Auto Analysis 실행 - Windows.bat`을 더블클릭합니다. Python을 따로 설치할 필요가 없습니다.
 3. macOS 사용자는 `Auto Analysis 실행 - macOS.command`를 더블클릭합니다.
 4. 브라우저가 열리면 Gemini API 키를 입력하고 사용합니다.
 5. 샘플은 `모의고사 보관함`에서 `4월 NEW`를 불러오면 됩니다.

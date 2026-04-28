@@ -7,6 +7,9 @@ import json
 import re
 import shutil
 import stat
+import subprocess
+import sys
+import urllib.request
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -19,6 +22,17 @@ PACKAGE_DIR = DIST_DIR / PACKAGE_NAME
 ZIP_PATH = DIST_DIR / "Auto_Analysis_공유용.zip"
 SAMPLE_ARCHIVE_TITLE = "4월 NEW"
 SECRET_PATTERN = re.compile(r"AIza[0-9A-Za-z_-]{20,}")
+BUILD_CACHE_DIR = ROOT / ".build_cache"
+WINDOWS_PYTHON_VERSION = "3.11.9"
+WINDOWS_PYTHON_ABI = "311"
+WINDOWS_PYTHON_EMBED_URL = (
+    f"https://www.python.org/ftp/python/{WINDOWS_PYTHON_VERSION}/"
+    f"python-{WINDOWS_PYTHON_VERSION}-embed-amd64.zip"
+)
+WINDOWS_PYTHON_EMBED_ZIP = (
+    BUILD_CACHE_DIR / f"python-{WINDOWS_PYTHON_VERSION}-embed-amd64.zip"
+)
+WINDOWS_WHEELHOUSE = BUILD_CACHE_DIR / f"win_amd64_cp{WINDOWS_PYTHON_ABI}_wheels"
 
 RUNTIME_FILES = [
     "app.py",
@@ -52,6 +66,90 @@ def copytree_clean(src: Path, dest: Path) -> None:
 def copy_text_crlf(src: Path, dest: Path) -> None:
     text = src.read_text(encoding="utf-8").replace("\r\n", "\n")
     dest.write_text(text.replace("\n", "\r\n"), encoding="utf-8")
+
+
+def download_file(url: str, dest: Path) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.exists() and dest.stat().st_size > 0:
+        return
+    print(f"다운로드: {url}")
+    with urllib.request.urlopen(url) as response, dest.open("wb") as output:
+        shutil.copyfileobj(response, output)
+
+
+def configure_windows_embed_paths(runtime_dir: Path) -> None:
+    pth_files = sorted(runtime_dir.glob("python*._pth"))
+    if not pth_files:
+        raise FileNotFoundError("Windows embeddable Python _pth 파일을 찾지 못했습니다.")
+
+    pth_path = pth_files[0]
+    zip_line = next(
+        (line.strip() for line in pth_path.read_text(encoding="utf-8").splitlines() if line.strip().endswith(".zip")),
+        f"python{WINDOWS_PYTHON_ABI}.zip",
+    )
+    pth_path.write_text(
+        "\n".join([
+            zip_line,
+            ".",
+            "Lib/site-packages",
+            "import site",
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+
+def download_windows_wheels() -> None:
+    if WINDOWS_WHEELHOUSE.exists():
+        shutil.rmtree(WINDOWS_WHEELHOUSE)
+    WINDOWS_WHEELHOUSE.mkdir(parents=True, exist_ok=True)
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "download",
+            "--only-binary=:all:",
+            "--platform",
+            "win_amd64",
+            "--python-version",
+            WINDOWS_PYTHON_ABI,
+            "--implementation",
+            "cp",
+            "--abi",
+            f"cp{WINDOWS_PYTHON_ABI}",
+            "--dest",
+            str(WINDOWS_WHEELHOUSE),
+            "-r",
+            str(ROOT / "requirements.txt"),
+        ],
+        check=True,
+    )
+
+
+def install_windows_wheels(site_packages: Path) -> None:
+    site_packages.mkdir(parents=True, exist_ok=True)
+    wheels = sorted(WINDOWS_WHEELHOUSE.glob("*.whl"))
+    if not wheels:
+        raise FileNotFoundError("Windows 패키지 wheel을 찾지 못했습니다.")
+
+    for wheel in wheels:
+        with zipfile.ZipFile(wheel) as archive:
+            archive.extractall(site_packages)
+
+
+def build_windows_portable_runtime() -> None:
+    runtime_dir = PACKAGE_DIR / "runtime" / "python"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+
+    download_file(WINDOWS_PYTHON_EMBED_URL, WINDOWS_PYTHON_EMBED_ZIP)
+    with zipfile.ZipFile(WINDOWS_PYTHON_EMBED_ZIP) as archive:
+        archive.extractall(runtime_dir)
+
+    configure_windows_embed_paths(runtime_dir)
+    download_windows_wheels()
+    install_windows_wheels(runtime_dir / "Lib" / "site-packages")
 
 
 def scrub_local_paths(value: Any) -> Any:
@@ -91,6 +189,8 @@ def copy_runtime_files() -> None:
 
     for dirname in RUNTIME_DIRS:
         copytree_clean(ROOT / dirname, PACKAGE_DIR / dirname)
+
+    build_windows_portable_runtime()
 
     copy_text_crlf(ROOT / "start_gui_windows.bat", PACKAGE_DIR / "Auto Analysis 실행 - Windows.bat")
     mac_launcher = PACKAGE_DIR / "Auto Analysis 실행 - macOS.command"
@@ -144,6 +244,8 @@ def copy_sample_archive() -> None:
 def assert_no_api_key() -> None:
     for path in PACKAGE_DIR.rglob("*"):
         if not path.is_file():
+            continue
+        if path.relative_to(PACKAGE_DIR).parts[:1] == ("runtime",):
             continue
         try:
             data = path.read_bytes()

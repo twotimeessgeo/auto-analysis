@@ -10,3 +10,4 @@ gui_server.log
 gui_server_*.log
 question_crops*/
 dist/
+.build_cache/

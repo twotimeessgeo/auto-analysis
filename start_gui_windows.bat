@@ -6,8 +6,17 @@ cd /d "%~dp0"
 
 set "PORT=5057"
 set "URL=http://127.0.0.1:%PORT%/"
+set "RUNTIME_PYTHON=runtime\python\python.exe"
 set "VENV_DIR=.venv"
-set "PYTHON_BIN=%VENV_DIR%\Scripts\python.exe"
+set "VENV_PYTHON=%VENV_DIR%\Scripts\python.exe"
+
+if exist "%RUNTIME_PYTHON%" (
+  set "PYTHON_BIN=%RUNTIME_PYTHON%"
+  set "USING_PORTABLE=1"
+) else (
+  set "PYTHON_BIN=%VENV_PYTHON%"
+  set "USING_PORTABLE="
+)
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $c = Get-NetTCPConnection -LocalPort %PORT% -State Listen -ErrorAction Stop; if ($c) { exit 0 } } catch { exit 1 }"
 if not errorlevel 1 (
@@ -19,6 +28,7 @@ if not errorlevel 1 (
 if exist "%PYTHON_BIN%" (
   "%PYTHON_BIN%" -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>nul
   if errorlevel 1 (
+    if defined USING_PORTABLE goto portable_error
     echo 기존 실행 환경의 Python 버전이 낮아 새로 준비합니다.
     rmdir /s /q "%VENV_DIR%"
   )
@@ -47,6 +57,8 @@ echo 브라우저가 자동으로 열립니다.
 echo 이 창을 닫으면 Auto Analysis 서버도 종료됩니다.
 echo.
 
+if defined USING_PORTABLE echo 내장 Python으로 실행합니다. 별도 설치가 필요 없습니다.
+
 start "" /min "%PYTHON_BIN%" -c "import time, urllib.request, webbrowser; url='%URL%'; exec('for _ in range(60):\n    try:\n        urllib.request.urlopen(url, timeout=1).close()\n        webbrowser.open(url)\n        break\n    except Exception:\n        time.sleep(1)')"
 "%PYTHON_BIN%" app.py
 
@@ -61,6 +73,13 @@ echo Python 3.10 이상을 찾지 못했습니다.
 echo https://www.python.org/downloads/ 에서 Python 3.11 이상을 설치한 뒤 다시 실행하세요.
 echo 설치 화면에서 Add python.exe to PATH를 체크하면 가장 쉽습니다.
 echo 이미 설치되어 있다면 Python 설치 프로그램을 다시 실행한 뒤 Modify ^> Add python.exe to PATH를 선택하세요.
+pause
+exit /b 1
+
+:portable_error
+echo.
+echo 내장 Python 실행 환경이 손상되었습니다.
+echo ZIP을 새로 압축 해제한 뒤 다시 실행하세요.
 pause
 exit /b 1
 
