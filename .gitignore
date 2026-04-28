@@ -9,3 +9,4 @@ local_settings.json
 gui_server.log
 gui_server_*.log
 question_crops*/
+dist/

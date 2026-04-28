@@ -10,6 +10,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import urllib.error
@@ -1183,6 +1184,15 @@ def safe_archive_dir(archive_id: str) -> Path:
     if not re.fullmatch(r"[A-Za-z0-9_-]+", archive_id):
         raise ValueError("잘못된 아카이브 ID입니다.")
     return ARCHIVES_DIR / archive_id
+
+
+def open_local_folder(path: Path) -> None:
+    if os.name == "nt":
+        os.startfile(str(path))  # type: ignore[attr-defined]
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", str(path)])
+    else:
+        subprocess.Popen(["xdg-open", str(path)])
 
 
 def archive_index_path() -> Path:
@@ -2514,7 +2524,7 @@ def open_archive_folder(archive_id: str):
         return jsonify({"error": str(exc)}), 400
     if not archive_dir.exists():
         return jsonify({"error": "아카이브를 찾지 못했습니다."}), 404
-    subprocess.Popen(["open", str(archive_dir)])
+    open_local_folder(archive_dir)
     return jsonify({"ok": True, "archive_dir": str(archive_dir)})
 
 
@@ -3032,7 +3042,7 @@ def open_job_folder(job_id: str):
         target_dir = job_dir
     if not target_dir.exists():
         return jsonify({"error": "결과 폴더를 찾지 못했습니다."}), 404
-    subprocess.Popen(["open", str(target_dir)])
+    open_local_folder(target_dir)
     return jsonify({"ok": True, "output_dir": str(target_dir)})
 
 
