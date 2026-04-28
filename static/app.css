@@ -1195,6 +1195,89 @@
   outline-offset: -2px;
 }
 
+.solution-classification-overview {
+  min-width: 0;
+}
+
+.classification-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px;
+}
+
+.classification-table {
+  min-width: 0;
+  margin: 12px;
+  overflow: auto;
+}
+
+.classification-matrix {
+  display: grid;
+  grid-template-columns: 52px 62px 62px 112px repeat(5, minmax(220px, 1fr)) 62px 104px 74px;
+  gap: 4px;
+  min-width: 1500px;
+}
+
+.classification-head-cell,
+.classification-number-cell,
+.classification-edit-cell {
+  min-height: 36px;
+  border: var(--tw-border);
+  background: #fff;
+  font-weight: 850;
+}
+
+.classification-head-cell {
+  display: grid;
+  place-items: center;
+  background: var(--tw-panel-soft);
+  color: var(--tw-muted);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.classification-number-cell {
+  cursor: pointer;
+  color: var(--tw-ink);
+}
+
+.classification-edit-cell {
+  display: grid;
+}
+
+.classification-edit-cell input,
+.classification-edit-cell select,
+.classification-field input,
+.classification-field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--tw-ink);
+  font-weight: 820;
+  outline: 0;
+}
+
+.classification-edit-cell input,
+.classification-edit-cell select {
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.classification-edit-cell.is-unit input {
+  text-align: left;
+}
+
+.classification-edit-cell input:focus,
+.classification-edit-cell select:focus,
+.classification-field input:focus,
+.classification-field select:focus {
+  outline: 2px solid var(--tw-ink);
+  outline-offset: -2px;
+}
+
 .solution-nav {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
@@ -1353,6 +1436,57 @@
   margin: 0;
   font-size: 2rem;
   line-height: 1.1;
+}
+
+.solution-classification-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: var(--tw-border);
+  background: var(--tw-panel-soft);
+}
+
+.classification-panel-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.classification-panel-head h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
+
+.classification-field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.classification-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: var(--tw-border);
+  background: #fff;
+}
+
+.classification-field.is-wide {
+  grid-column: 1 / -1;
+}
+
+.classification-field span {
+  padding: 7px 8px 0;
+  color: var(--tw-muted);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.classification-field input,
+.classification-field select {
+  padding: 0 8px 8px;
 }
 
 .solution-metrics {

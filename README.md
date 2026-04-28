@@ -1,6 +1,7 @@
 # Auto Analysis
 
 PDF 시험지를 문항별 이미지로 자르고, Gemini API로 사회탐구 지리 문항 해설 CSV를 생성하는 로컬 GUI입니다.
+해설 편집 화면에서 문항별 단원 분류를 붙이고, 원본 분류표 형식의 XLSX로 내보낼 수 있습니다.
 
 ## GitHub Pages
 

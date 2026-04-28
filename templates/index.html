@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/design-system/base.css" />
     <link rel="stylesheet" href="/design-system/components.css" />
     <link rel="stylesheet" href="/design-system/patterns.css" />
-    <link rel="stylesheet" href="/static/app.css?v=26" />
+    <link rel="stylesheet" href="/static/app.css?v=27" />
   </head>
   <body>
     <main class="tw-page app-page">
@@ -560,6 +560,10 @@
           <div class="tw-row">
             <span class="tw-badge" id="solutionDirtyBadge" hidden>수정됨</span>
             <span class="tw-badge" id="solutionsStatusBadge">대기</span>
+            <button class="tw-button" type="button" id="exportClassificationButton" disabled>
+              <i data-lucide="file-spreadsheet"></i>
+              <span>분류표 XLSX</span>
+            </button>
             <button class="tw-button" type="button" id="saveSolutionsButton" disabled>
               <i data-lucide="save"></i>
               <span>수정 저장</span>
@@ -595,6 +599,20 @@
             </summary>
             <div class="solution-quality-strip" id="solutionQualityStrip" hidden></div>
             <div class="solution-overview-table" id="solutionOverviewTable"></div>
+          </details>
+
+          <details class="solution-classification-overview app-collapse" id="solutionClassificationOverview" open hidden>
+            <summary class="app-collapse-summary">
+              <div>
+                <p class="tw-kicker">CLASSIFICATION</p>
+                <h3 class="app-subtitle">문항별 분류표</h3>
+              </div>
+              <span class="app-collapse-label">접기</span>
+            </summary>
+            <div class="classification-tools">
+              <span id="classificationStatus" class="cut-warning">단원 목록 로딩 중</span>
+            </div>
+            <div id="classificationTable" class="classification-table"></div>
           </details>
 
           <details class="solution-workspace app-collapse">
@@ -640,6 +658,7 @@
                   </div>
                   <span class="tw-badge is-solid" id="solutionAnswer">정답</span>
                 </div>
+                <section class="solution-classification-panel" id="solutionClassificationPanel"></section>
                 <div class="solution-metrics" id="solutionMetrics"></div>
                 <div class="solution-detail-list" id="solutionDetails"></div>
               </article>
@@ -706,6 +725,6 @@
     </main>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script src="/static/app.js?v=31"></script>
+    <script src="/static/app.js?v=32"></script>
   </body>
 </html>

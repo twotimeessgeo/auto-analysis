@@ -23,6 +23,9 @@ from typing import Callable
 from uuid import uuid4
 
 from flask import Flask, jsonify, render_template, request, send_file, send_from_directory
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.worksheet.datavalidation import DataValidation
 from PIL import Image, ImageDraw, ImageOps
 from werkzeug.utils import secure_filename
 
@@ -61,6 +64,7 @@ DESIGN_DIR = ROOT / "design-system"
 RUNS_DIR = ROOT / "gui_runs"
 ARCHIVES_DIR = ROOT / "archives"
 LOCAL_SETTINGS_PATH = ROOT / "local_settings.json"
+CLASSIFICATION_UNITS_PATH = ROOT / "classification_units.json"
 RUNS_DIR.mkdir(exist_ok=True)
 ARCHIVES_DIR.mkdir(exist_ok=True)
 
@@ -84,6 +88,28 @@ SOLUTION_COLUMNS = [
     "수정 제안",
     "Comment 제목",
     "Comment 내용",
+]
+CLASSIFICATION_SUBUNIT_COLUMNS = [f"소단원 - {rank}순위" for rank in range(1, 6)]
+CLASSIFICATION_OBJECTIVE_COLUMN = "객(1)/주관식(0)"
+CLASSIFICATION_KILLER_COLUMN = "킬러여부\n(해당 없음/준킬러/킬러)"
+CLASSIFICATION_DIFFICULTY_COLUMN = "난이도\n(1(下下)~9(上上))"
+CLASSIFICATION_COLUMNS = [
+    "배점",
+    "선택과목",
+    *CLASSIFICATION_SUBUNIT_COLUMNS,
+    CLASSIFICATION_OBJECTIVE_COLUMN,
+    CLASSIFICATION_KILLER_COLUMN,
+    CLASSIFICATION_DIFFICULTY_COLUMN,
+]
+CLASSIFICATION_EXPORT_COLUMNS = [
+    "문항번호",
+    "배점",
+    "정답",
+    "선택과목",
+    *CLASSIFICATION_SUBUNIT_COLUMNS,
+    CLASSIFICATION_OBJECTIVE_COLUMN,
+    CLASSIFICATION_KILLER_COLUMN,
+    CLASSIFICATION_DIFFICULTY_COLUMN,
 ]
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff", ".bmp"}
 GEMINI_DEFAULT_MODEL = "gemini-3.1-pro-preview"
@@ -867,6 +893,143 @@ def read_json_file(path: Path) -> dict[str, object] | None:
     except (json.JSONDecodeError, OSError):
         return None
     return payload if isinstance(payload, dict) else None
+
+
+def classification_catalog() -> dict[str, object]:
+    payload = read_json_file(CLASSIFICATION_UNITS_PATH)
+    if not payload:
+        return {"한국지리": {"subject": "한국지리", "sections": [], "units": []}, "세계지리": {"subject": "세계지리", "sections": [], "units": []}}
+    return payload
+
+
+def ensure_solution_fieldnames(fieldnames: list[str]) -> list[str]:
+    normalized = list(dict.fromkeys(str(name) for name in fieldnames if str(name).strip()))
+    if "문항 번호" not in normalized:
+        normalized.insert(0, "문항 번호")
+    for column in CLASSIFICATION_COLUMNS:
+        if column not in normalized:
+            normalized.append(column)
+    return normalized
+
+
+def infer_classification_subject(solutions: list[dict[str, object]], requested: object = None) -> str:
+    requested_subject = clean_text(str(requested or ""))
+    if requested_subject in {"한국지리", "세계지리"}:
+        return requested_subject
+    for item in solutions:
+        fields = item.get("fields") if isinstance(item.get("fields"), dict) else {}
+        subject = clean_text(str(fields.get("선택과목", "")))
+        if subject in {"한국지리", "세계지리"}:
+            return subject
+    return "한국지리"
+
+
+def catalog_units_for_subject(subject: str) -> list[dict[str, object]]:
+    catalog = classification_catalog()
+    subject_payload = catalog.get(subject) if isinstance(catalog, dict) else None
+    units = subject_payload.get("units") if isinstance(subject_payload, dict) else []
+    return [unit for unit in units if isinstance(unit, dict)]
+
+
+def as_excel_number(value: object) -> object:
+    text = clean_text(str(value or ""))
+    if not text:
+        return ""
+    try:
+        number = float(text)
+    except ValueError:
+        return text
+    return int(number) if number.is_integer() else number
+
+
+def write_classification_xlsx(
+    job_dir: Path,
+    solutions: list[dict[str, object]],
+    subject: str,
+    filename: str = "classification_table.xlsx",
+) -> Path:
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "문항분류표_241205"
+    worksheet.append(CLASSIFICATION_EXPORT_COLUMNS)
+
+    solution_map = {
+        int(item["number"]): item
+        for item in normalize_solution_rows(solutions)
+        if isinstance(item.get("number"), int)
+    }
+    max_number = max([20, *solution_map.keys()])
+    for number in range(1, max_number + 1):
+        item = solution_map.get(number, {})
+        fields = item.get("fields") if isinstance(item.get("fields"), dict) else {}
+        row_subject = clean_text(str(fields.get("선택과목", ""))) or subject
+        row = [
+            number,
+            as_excel_number(fields.get("배점", "")),
+            normalize_answer_value(fields.get("정답", "")),
+            row_subject,
+            *[clean_text(str(fields.get(column, ""))) for column in CLASSIFICATION_SUBUNIT_COLUMNS],
+            clean_text(str(fields.get(CLASSIFICATION_OBJECTIVE_COLUMN, ""))) or "1",
+            clean_text(str(fields.get(CLASSIFICATION_KILLER_COLUMN, ""))),
+            as_excel_number(fields.get(CLASSIFICATION_DIFFICULTY_COLUMN, "")),
+        ]
+        worksheet.append(row)
+
+    header_fill = PatternFill("solid", fgColor="6F4A8E")
+    header_font = Font(bold=True, color="FFFFFF")
+    thin = Side(style="thin", color="777777")
+    border = Border(top=thin, bottom=thin, left=thin, right=thin)
+    for cell in worksheet[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = border
+    for row in worksheet.iter_rows(min_row=2, max_row=max_number + 1, max_col=len(CLASSIFICATION_EXPORT_COLUMNS)):
+        for cell in row:
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            cell.border = border
+        for cell in row[4:9]:
+            cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
+    widths = [10, 8, 8, 12, 34, 34, 34, 34, 34, 16, 24, 24]
+    for index, width in enumerate(widths, start=1):
+        worksheet.column_dimensions[worksheet.cell(1, index).column_letter].width = width
+    worksheet.freeze_panes = "A2"
+
+    back_data = workbook.create_sheet("backData")
+    back_data.append(["소단원", "대단원", "코드", "소단원명"])
+    for unit in catalog_units_for_subject(subject):
+        back_data.append(
+            [
+                unit.get("label", ""),
+                unit.get("chapter_title", ""),
+                unit.get("code", ""),
+                unit.get("name", ""),
+            ]
+        )
+    for cell in back_data[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = border
+    for row in back_data.iter_rows(min_row=2, max_col=4):
+        for cell in row:
+            cell.border = border
+            cell.alignment = Alignment(vertical="center", wrap_text=True)
+    back_data.column_dimensions["A"].width = 56
+    back_data.column_dimensions["B"].width = 28
+    back_data.column_dimensions["C"].width = 12
+    back_data.column_dimensions["D"].width = 40
+
+    if back_data.max_row > 1:
+        formula = f"'backData'!$A$2:$A${back_data.max_row}"
+        validation = DataValidation(type="list", formula1=formula, allow_blank=True)
+        worksheet.add_data_validation(validation)
+        validation.add(f"E2:I{max_number + 1}")
+
+    output_path = job_dir / filename
+    workbook.save(output_path)
+    return output_path
 
 
 def progress_file(job_dir: Path) -> Path:
@@ -1818,6 +1981,7 @@ def build_solutions_payload(
     output_dir: Path | None = None,
     default_columns: list[str] | None = None,
 ) -> dict[str, object]:
+    fieldnames = ensure_solution_fieldnames(fieldnames)
     solutions = normalize_solution_rows(solutions)
     solution_numbers = {int(item["number"]) for item in solutions}
     image_numbers = question_numbers(output_dir) if output_dir else set()
@@ -1827,7 +1991,7 @@ def build_solutions_payload(
         "has_images": output_dir is not None,
         "encoding": encoding,
         "fieldnames": fieldnames,
-        "default_columns": default_columns or SOLUTION_COLUMNS,
+        "default_columns": ensure_solution_fieldnames(default_columns or SOLUTION_COLUMNS),
         "solutions": solutions,
         "questions": question_payload(job_id, output_dir) if output_dir else [],
         "cut_rates": solution_cut_rates(solutions),
@@ -1843,9 +2007,7 @@ def write_solutions_csv(
     filename: str = "solutions_edited.csv",
 ) -> Path:
     csv_path = job_dir / filename
-    normalized_fieldnames = list(fieldnames)
-    if "문항 번호" not in normalized_fieldnames:
-        normalized_fieldnames.insert(0, "문항 번호")
+    normalized_fieldnames = ensure_solution_fieldnames(fieldnames)
 
     with csv_path.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=normalized_fieldnames)
@@ -1862,7 +2024,7 @@ def normalize_solution_payload(payload: dict[str, object]) -> tuple[list[str], l
     fieldnames = payload.get("fieldnames")
     if not isinstance(fieldnames, list) or not fieldnames:
         fieldnames = SOLUTION_COLUMNS
-    fieldnames = [str(name) for name in fieldnames]
+    fieldnames = ensure_solution_fieldnames([str(name) for name in fieldnames])
 
     normalized: list[dict[str, object]] = []
     for index, item in enumerate(payload.get("solutions", []), start=1):
@@ -1928,6 +2090,11 @@ def api_question_image(image_id: str):
     if not path:
         return jsonify({"error": "문항 이미지를 찾지 못했습니다."}), 404
     return send_file(path)
+
+
+@app.get("/api/unit-catalog")
+def api_unit_catalog():
+    return jsonify(classification_catalog())
 
 
 @app.post("/api/cut-predict")
@@ -2174,6 +2341,42 @@ def edit_job_solutions(job_id: str):
     edited_csv = write_solutions_csv(job_dir, fieldnames, solutions)
     result["edited_csv_path"] = str(edited_csv)
     return jsonify(result)
+
+
+@app.post("/api/jobs/<job_id>/classification/export")
+def export_job_classification(job_id: str):
+    try:
+        job_dir = safe_job_dir(job_id)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    if not job_dir.exists():
+        return jsonify({"error": "작업을 찾지 못했습니다."}), 404
+
+    payload = request.get_json(silent=True) or {}
+    fieldnames, solutions = normalize_solution_payload(payload)
+    if not solutions:
+        return jsonify({"error": "내보낼 분류표 행을 찾지 못했습니다."}), 400
+
+    subject = infer_classification_subject(solutions, payload.get("subject"))
+    output_dir = job_dir / "questions"
+    result = build_solutions_payload(
+        job_id,
+        fieldnames,
+        solutions,
+        str(payload.get("encoding") or "utf-8-sig"),
+        output_dir if output_dir.exists() else None,
+    )
+    (job_dir / "solutions.json").write_text(
+        json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    xlsx_path = write_classification_xlsx(job_dir, solutions, subject)
+    download_name = f"{job_id}_classification_table.xlsx"
+    return send_file(
+        xlsx_path,
+        as_attachment=True,
+        download_name=download_name,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 @app.get("/api/jobs/<job_id>/solutions")
