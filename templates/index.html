@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/design-system/base.css" />
     <link rel="stylesheet" href="/design-system/components.css" />
     <link rel="stylesheet" href="/design-system/patterns.css" />
-    <link rel="stylesheet" href="/static/app.css?v=29" />
+    <link rel="stylesheet" href="/static/app.css?v=30" />
   </head>
   <body>
     <main class="tw-page app-page">
@@ -107,8 +107,8 @@
               <label class="tw-field">
                 <span>과목</span>
                 <select name="gemini_subject">
+                  <option value="세계지리" selected>세계지리</option>
                   <option value="한국지리">한국지리</option>
-                  <option value="세계지리">세계지리</option>
                 </select>
               </label>
               <label class="tw-field">
@@ -319,8 +319,8 @@
             <label class="tw-field">
               <span>과목</span>
               <select id="cutSubject" name="subject">
+                <option value="세계지리" selected>세계지리</option>
                 <option value="한국지리">한국지리</option>
-                <option value="세계지리">세계지리</option>
               </select>
             </label>
             <label class="tw-field">
@@ -434,8 +434,8 @@
                   <span>과목</span>
                   <select id="questionSearchSubject">
                     <option value="">전체</option>
+                    <option value="세계지리" selected>세계지리</option>
                     <option value="한국지리">한국지리</option>
-                    <option value="세계지리">세계지리</option>
                   </select>
                 </label>
                 <label class="tw-field question-exam-field">
@@ -613,6 +613,10 @@
             </summary>
             <div class="classification-tools" id="classificationTools">
               <div class="classification-subject-switch" id="classificationSubjectSwitch" aria-label="분류 과목 선택"></div>
+              <label class="classification-filename-field">
+                <span>문항분류표 이름</span>
+                <input id="classificationFilename" type="text" value="문항분류표.xlsx" spellcheck="false" />
+              </label>
               <span id="classificationStatus" class="cut-warning">단원 목록 로딩 중</span>
             </div>
             <div id="classificationTable" class="classification-table"></div>
@@ -687,7 +691,7 @@
             </label>
             <label class="tw-field">
               <span>과목</span>
-              <input id="archiveSubject" name="subject" type="text" placeholder="예: 세계지리" />
+              <input id="archiveSubject" name="subject" type="text" value="세계지리" placeholder="예: 세계지리" />
             </label>
             <label class="tw-field">
               <span>시행일</span>
@@ -728,6 +732,6 @@
     </main>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script src="/static/app.js?v=34"></script>
+    <script src="/static/app.js?v=35"></script>
   </body>
 </html>

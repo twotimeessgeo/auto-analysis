@@ -42,5 +42,6 @@ python3 app.py
 ## Notes
 
 - 기본 사이트 제목은 `Auto Analysis`입니다.
+- 기본 과목은 `세계지리`입니다.
 - 기본 모델은 `gemini-3.1-pro-preview`입니다.
 - Gemini Pro 계열은 타임아웃을 줄이기 위해 동시 요청 수를 2개 이하로 제한합니다.

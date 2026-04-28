@@ -57,6 +57,7 @@ const classificationTable = document.querySelector("#classificationTable");
 const classificationTools = document.querySelector("#classificationTools");
 const classificationSubjectSwitch = document.querySelector("#classificationSubjectSwitch");
 const classificationStatus = document.querySelector("#classificationStatus");
+const classificationFilenameInput = document.querySelector("#classificationFilename");
 const exportClassificationButton = document.querySelector("#exportClassificationButton");
 const saveSolutionsButton = document.querySelector("#saveSolutionsButton");
 const solutionDirtyBadge = document.querySelector("#solutionDirtyBadge");
@@ -138,6 +139,7 @@ let errorJobId = null;
 let errorProgressLog = [];
 let splitProgressEventCount = 0;
 const GEMINI_PROFILE_STORAGE_KEY = "testauto.gemini_profile_v1";
+const appSelectStates = new WeakMap();
 let cutModel = null;
 let cutModelReady = null;
 let lastCutResult = null;
@@ -377,6 +379,138 @@ function refreshIcons() {
   }
 }
 
+function selectedOptionText(select) {
+  const option = select?.options?.[select.selectedIndex];
+  return option?.textContent?.trim() || select?.dataset?.placeholder || "선택";
+}
+
+function closeAppSelectMenus(except = null) {
+  document.querySelectorAll(".app-select-menu.is-open").forEach((menu) => {
+    if (menu !== except) menu.classList.remove("is-open");
+  });
+  document.querySelectorAll(".app-select-host.is-open").forEach((host) => {
+    if (!except || host !== except.closest(".app-select-host")) host.classList.remove("is-open");
+  });
+}
+
+function syncAppSelect(select) {
+  const state = appSelectStates.get(select);
+  if (!state) return;
+  state.button.textContent = selectedOptionText(select);
+  state.button.disabled = select.disabled;
+  state.host.classList.toggle("is-disabled", select.disabled);
+  state.menu.querySelectorAll(".app-select-option").forEach((button) => {
+    button.classList.toggle("is-selected", button.dataset.value === select.value);
+  });
+}
+
+function renderAppSelectOptions(select) {
+  const state = appSelectStates.get(select);
+  if (!state) return;
+  state.menu.innerHTML = "";
+
+  const options = Array.from(select.options || []);
+  if (!options.length) {
+    const empty = document.createElement("span");
+    empty.className = "app-select-empty";
+    empty.textContent = "선택 항목 없음";
+    state.menu.appendChild(empty);
+  }
+
+  options.forEach((option) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "app-select-option";
+    button.dataset.value = option.value;
+    button.textContent = option.textContent || option.value || "선택";
+    button.disabled = option.disabled;
+    button.addEventListener("click", () => {
+      if (button.disabled) return;
+      select.value = option.value;
+      select.dispatchEvent(new Event("input", { bubbles: true }));
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      closeAppSelectMenus();
+      syncAppSelect(select);
+    });
+    state.menu.appendChild(button);
+  });
+
+  syncAppSelect(select);
+}
+
+function enhanceAppSelect(select) {
+  if (!select || appSelectStates.has(select)) return;
+  const host = document.createElement("div");
+  host.className = "app-select-host";
+  select.before(host);
+  host.appendChild(select);
+  select.classList.add("app-select-native");
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "app-select-button";
+  button.setAttribute("aria-haspopup", "listbox");
+
+  const menu = document.createElement("div");
+  menu.className = "app-select-menu";
+  menu.setAttribute("role", "listbox");
+
+  host.append(button, menu);
+  appSelectStates.set(select, { host, button, menu });
+
+  button.addEventListener("click", () => {
+    if (select.disabled) return;
+    const willOpen = !menu.classList.contains("is-open");
+    closeAppSelectMenus(menu);
+    menu.classList.toggle("is-open", willOpen);
+    host.classList.toggle("is-open", willOpen);
+  });
+  select.addEventListener("change", () => syncAppSelect(select));
+
+  const observer = new MutationObserver(() => renderAppSelectOptions(select));
+  observer.observe(select, { childList: true, subtree: true, attributes: true });
+  appSelectStates.get(select).observer = observer;
+  renderAppSelectOptions(select);
+}
+
+function enhanceAppSelects(root = document) {
+  root.querySelectorAll("select").forEach(enhanceAppSelect);
+}
+
+function refreshAppSelect(select) {
+  if (!select) return;
+  if (!appSelectStates.has(select)) {
+    enhanceAppSelect(select);
+    return;
+  }
+  renderAppSelectOptions(select);
+}
+
+function syncAppSelects(root = document) {
+  root.querySelectorAll("select").forEach((select) => {
+    if (appSelectStates.has(select)) syncAppSelect(select);
+  });
+}
+
+function setNativeSelectValue(select, value) {
+  if (!select) return;
+  select.value = value;
+  refreshAppSelect(select);
+}
+
+function filenameFromDisposition(disposition) {
+  const encoded = String(disposition || "").match(/filename\*=UTF-8''([^;]+)/i);
+  if (encoded?.[1]) {
+    try {
+      return decodeURIComponent(encoded[1].replace(/"/g, ""));
+    } catch {
+      return encoded[1].replace(/"/g, "");
+    }
+  }
+  const plain = String(disposition || "").match(/filename="?([^";]+)"?/i);
+  return plain?.[1] || "";
+}
+
 function formatFixed(value, digits = 1) {
   return Number(value).toFixed(digits);
 }
@@ -450,6 +584,7 @@ function renderHistoryExamSelect(selectedId = null) {
     historyExamSelect.appendChild(option);
     historyExamSelect.disabled = true;
     loadHistoryButton.disabled = true;
+    refreshAppSelect(historyExamSelect);
     return;
   }
 
@@ -466,6 +601,7 @@ function renderHistoryExamSelect(selectedId = null) {
   if (selectedId && subjectExams.some((exam) => exam.id === selectedId)) {
     historyExamSelect.value = selectedId;
   }
+  refreshAppSelect(historyExamSelect);
 }
 
 function selectedHistoryExam() {
@@ -476,8 +612,8 @@ function applyHistoryExam() {
   const exam = selectedHistoryExam();
   if (!exam) return;
   lastLoadedHistoryId = exam.id;
-  cutSubject.value = exam.subject;
-  cutMode.value = "national";
+  setNativeSelectValue(cutSubject, exam.subject);
+  setNativeSelectValue(cutMode, "national");
   renderHistoryExamSelect(exam.id);
   renderRelation();
   pointInputs().forEach((input, index) => {
@@ -553,6 +689,7 @@ function setCutBusy(isBusy) {
   cutForm.querySelectorAll("button, input, select, textarea").forEach((element) => {
     element.disabled = isBusy;
   });
+  syncAppSelects(cutForm);
   cutModelBadge.textContent = isBusy
     ? "계산 중"
     : `${cutModel ? cutModel.training_records.total : 0}개 학습`;
@@ -706,6 +843,7 @@ function renderQuestionExamSelect(selectedKey = questionExamSelect.value) {
   if (selectedKey && exams.some((exam) => exam.key === selectedKey)) {
     questionExamSelect.value = selectedKey;
   }
+  refreshAppSelect(questionExamSelect);
 }
 
 function questionSearchParams() {
@@ -737,6 +875,7 @@ function setQuestionSearchBusy(isBusy) {
   questionSearchForm.querySelectorAll("button, input, select").forEach((element) => {
     element.disabled = isBusy;
   });
+  syncAppSelects(questionSearchForm);
   if (isBusy) {
     questionBankBadge.textContent = "검색 중";
   }
@@ -851,6 +990,7 @@ async function runQuestionSearch(event = null, refresh = false) {
 
 function resetQuestionSearch() {
   questionSearchForm.reset();
+  syncAppSelects(questionSearchForm);
   renderQuestionExamSelect();
   runQuestionSearch();
 }
@@ -873,6 +1013,7 @@ function applyQuestionPreset(preset) {
     questionMatchStatus.value = "unmatched";
     questionSearchSort.value = "latest";
   }
+  syncAppSelects(questionSearchForm);
   renderQuestionExamSelect();
   runQuestionSearch();
 }
@@ -992,6 +1133,7 @@ function applyGeminiProfile(profile) {
   if (geminiMaxRequestsInput && profile.maxRequests) geminiMaxRequestsInput.value = profile.maxRequests;
   if (geminiConcurrencyInput && profile.concurrency) geminiConcurrencyInput.value = profile.concurrency;
   if (geminiPromptInput && profile.prompt) geminiPromptInput.value = profile.prompt;
+  syncAppSelects(form);
 }
 
 function clampGeminiConcurrencyForModel() {
@@ -1070,6 +1212,7 @@ async function loadGeminiDefaults() {
     }
     const keyStatus = defaults.has_api_key ? "서버 기본 키 적용됨" : "API 키를 입력하거나 저장하세요";
     showGeminiProfileStatus(`${keyStatus} · 기본 프롬프트 준비됨`);
+    syncAppSelects(form);
   } catch {
     // 기본값 로딩 실패는 수동 입력 흐름을 막지 않는다.
   }
@@ -1509,6 +1652,21 @@ function defaultClassificationSubject() {
   return subject || "세계지리";
 }
 
+function normalizeClassificationFilename(value) {
+  let filename = String(value || "").trim().replace(/[\\/:*?"<>|]+/g, "_");
+  filename = filename.replace(/\s+/g, " ").replace(/^\.+|\.+$/g, "");
+  if (!filename) filename = "문항분류표.xlsx";
+  if (!filename.toLowerCase().endsWith(".xlsx")) filename = `${filename}.xlsx`;
+  return filename;
+}
+
+function ensureClassificationFilename() {
+  if (!classificationFilenameInput) return "문항분류표.xlsx";
+  const filename = normalizeClassificationFilename(classificationFilenameInput.value);
+  if (!classificationFilenameInput.value.trim()) classificationFilenameInput.value = filename;
+  return filename;
+}
+
 function classificationSubjectForSolution(solution) {
   const subject = String(solution?.fields?.["선택과목"] || "").trim();
   return classificationSubjects.includes(subject) ? subject : defaultClassificationSubject();
@@ -1545,8 +1703,12 @@ function unitsForSubject(subject) {
   return unitCatalog?.[subject]?.units || [];
 }
 
+function compactUnitLabel(value) {
+  return String(value || "").replace(/^(\d+-\d+-\d+)\.\s+/, "$1.");
+}
+
 function unitDisplayText(unit) {
-  return unit?.label || unit?.name || "";
+  return compactUnitLabel(unit?.label || unit?.name || "");
 }
 
 function closeClassificationMenus(except = null) {
@@ -1561,7 +1723,7 @@ function renderUnitMenuOptions(menu, solution, key, filterText = "") {
   const subject = classificationSubjectForSolution(solution);
   const query = String(filterText || "").trim().toLowerCase();
   const units = unitsForSubject(subject).filter((unit) => {
-    const haystack = [unit.code, unit.name, unit.label].filter(Boolean).join(" ").toLowerCase();
+    const haystack = [unit.code, unit.name, unit.label, unitDisplayText(unit)].filter(Boolean).join(" ").toLowerCase();
     return !query || haystack.includes(query);
   });
 
@@ -1742,6 +1904,7 @@ function buildClassificationControl(solution, key, label, options = {}) {
   });
 
   wrapper.append(span, input);
+  if (input.tagName === "SELECT") enhanceAppSelect(input);
   return wrapper;
 }
 
@@ -1813,6 +1976,7 @@ function renderClassificationOverview() {
   solutionClassificationOverview.hidden = false;
   exportClassificationButton.disabled = false;
   classificationTable.innerHTML = "";
+  ensureClassificationFilename();
   renderClassificationSubjectSwitch();
 
   const headers = ["문항", "배점", "정답", "1순위", "2순위", "3순위", "4순위", "5순위", "객", "킬러", "난이도"];
@@ -1885,6 +2049,7 @@ function renderClassificationOverview() {
       const cell = document.createElement("label");
       cell.className = `classification-edit-cell${classificationSubunitKeys.includes(key) ? " is-unit" : ""}`;
       cell.appendChild(input);
+      if (input.tagName === "SELECT") enhanceAppSelect(input);
       table.appendChild(cell);
     });
   });
@@ -2987,6 +3152,7 @@ async function exportClassificationTable() {
   if (!currentJobId || !currentSolutions.length) return;
   currentSolutions = currentSolutions.map(normalizeSolutionRecord);
   ensureAllClassificationFields();
+  const requestedFilename = ensureClassificationFilename();
   setSolutionsStatus("분류표 생성 중", true);
   if (exportClassificationButton) exportClassificationButton.disabled = true;
 
@@ -2998,6 +3164,7 @@ async function exportClassificationTable() {
         fieldnames: currentFieldnames,
         encoding: currentEncoding,
         subject: defaultClassificationSubject(),
+        filename: requestedFilename,
         solutions: currentSolutions,
       }),
     });
@@ -3018,8 +3185,7 @@ async function exportClassificationTable() {
 
     const blob = await response.blob();
     const disposition = response.headers.get("Content-Disposition") || "";
-    const match = disposition.match(/filename="?([^"]+)"?/i);
-    const filename = match?.[1] || `${currentJobId}_classification_table.xlsx`;
+    const filename = filenameFromDisposition(disposition) || requestedFilename;
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -3072,10 +3238,16 @@ document.addEventListener("click", (event) => {
   if (!event.target.closest(".classification-unit-cell")) {
     closeClassificationMenus();
   }
+  if (!event.target.closest(".app-select-host")) {
+    closeAppSelectMenus();
+  }
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeClassificationMenus();
+  if (event.key === "Escape") {
+    closeClassificationMenus();
+    closeAppSelectMenus();
+  }
 });
 
 archiveForm.addEventListener("submit", async (event) => {
@@ -3131,6 +3303,7 @@ refreshArchivesButton.addEventListener("click", loadArchives);
 
 resetButton.addEventListener("click", () => {
   form.reset();
+  syncAppSelects(form);
   pdfInput.value = "";
   csvInput.value = "";
   imageInput.value = "";
@@ -3152,6 +3325,7 @@ cutSubject.addEventListener("change", () => {
   fillDefaultPoints();
   renderHistoryExamSelect();
   renderRelation();
+  syncAppSelects(cutForm);
 });
 
 fillDefaultPointsButton.addEventListener("click", fillDefaultPoints);
@@ -3188,6 +3362,7 @@ if (!["#question-bank", "#cut-predictor"].includes(initialHash)) {
 }
 window.addEventListener("hashchange", () => syncAppStateFromHash());
 
+enhanceAppSelects();
 refreshIcons();
 cutModelReady = loadCutModel();
 restoreGeminiProfile();

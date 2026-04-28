@@ -93,6 +93,11 @@ CLASSIFICATION_SUBUNIT_COLUMNS = [f"소단원 - {rank}순위" for rank in range(
 CLASSIFICATION_OBJECTIVE_COLUMN = "객(1)/주관식(0)"
 CLASSIFICATION_KILLER_COLUMN = "킬러여부\n(해당 없음/준킬러/킬러)"
 CLASSIFICATION_DIFFICULTY_COLUMN = "난이도\n(1(下下)~9(上上))"
+DEFAULT_GEOGRAPHY_SUBJECT = "세계지리"
+CLASSIFICATION_SHEET_NAME = "문항분류표_241205"
+CLASSIFICATION_BACKDATA_SHEET_NAME = "backData"
+CLASSIFICATION_EXPORT_ROWS = 20
+CLASSIFICATION_DEFAULT_FILENAME = "문항분류표.xlsx"
 CLASSIFICATION_COLUMNS = [
     "배점",
     "선택과목",
@@ -721,8 +726,13 @@ def normalize_subject(value: str | None) -> str:
     value = clean_text(value)
     if not value:
         return ""
-    if value in ("한국지리", "world", "korea", "세계지리", "korean geography"):
+    if value in ("한국지리", "세계지리"):
         return value
+    lower = value.lower()
+    if lower in ("world", "world geography", "global geography"):
+        return "세계지리"
+    if lower in ("korea", "korean geography"):
+        return "한국지리"
     no_space = value.replace(" ", "")
     if no_space in ("한국지리", "한국", "한국지리전문", "한국지리과목", "한국지리/세계지리"):
         return "한국지리"
@@ -921,7 +931,7 @@ def infer_classification_subject(solutions: list[dict[str, object]], requested: 
         subject = clean_text(str(fields.get("선택과목", "")))
         if subject in {"한국지리", "세계지리"}:
             return subject
-    return "세계지리"
+    return DEFAULT_GEOGRAPHY_SUBJECT
 
 
 def catalog_units_for_subject(subject: str) -> list[dict[str, object]]:
@@ -942,6 +952,24 @@ def as_excel_number(value: object) -> object:
     return int(number) if number.is_integer() else number
 
 
+def classification_unit_label(value: object) -> str:
+    text = clean_text(str(value or ""))
+    if not text:
+        return ""
+    return re.sub(r"^(\d+-\d+-\d+)\.\s+", r"\1.", text)
+
+
+def classification_filename(value: object, fallback: str = CLASSIFICATION_DEFAULT_FILENAME) -> str:
+    name = clean_text(str(value or "")) or fallback
+    name = re.sub(r"[\x00-\x1f\x7f]+", "", name)
+    name = name.replace("/", "_").replace("\\", "_").strip(" .")
+    if not name:
+        name = fallback
+    if not name.lower().endswith(".xlsx"):
+        name = f"{name}.xlsx"
+    return name
+
+
 def write_classification_xlsx(
     job_dir: Path,
     solutions: list[dict[str, object]],
@@ -950,82 +978,98 @@ def write_classification_xlsx(
 ) -> Path:
     workbook = Workbook()
     worksheet = workbook.active
-    worksheet.title = "문항분류표_241205"
+    worksheet.title = CLASSIFICATION_SHEET_NAME
     worksheet.append(CLASSIFICATION_EXPORT_COLUMNS)
+    worksheet.sheet_format.defaultRowHeight = 17.4
+    worksheet.row_dimensions[1].height = 26.4
 
     solution_map = {
         int(item["number"]): item
         for item in normalize_solution_rows(solutions)
         if isinstance(item.get("number"), int)
     }
-    max_number = max([20, *solution_map.keys()])
-    for number in range(1, max_number + 1):
+    subject = normalize_subject(subject) or DEFAULT_GEOGRAPHY_SUBJECT
+    for number in range(1, CLASSIFICATION_EXPORT_ROWS + 1):
         item = solution_map.get(number, {})
         fields = item.get("fields") if isinstance(item.get("fields"), dict) else {}
-        row_subject = clean_text(str(fields.get("선택과목", ""))) or subject
+        row_subject = normalize_subject(clean_text(str(fields.get("선택과목", "")))) or subject
         row = [
             number,
             as_excel_number(fields.get("배점", "")),
-            normalize_answer_value(fields.get("정답", "")),
+            as_excel_number(normalize_answer_value(fields.get("정답", ""))),
             row_subject,
-            *[clean_text(str(fields.get(column, ""))) for column in CLASSIFICATION_SUBUNIT_COLUMNS],
-            clean_text(str(fields.get(CLASSIFICATION_OBJECTIVE_COLUMN, ""))) or "1",
+            *[classification_unit_label(fields.get(column, "")) for column in CLASSIFICATION_SUBUNIT_COLUMNS],
+            as_excel_number(clean_text(str(fields.get(CLASSIFICATION_OBJECTIVE_COLUMN, ""))) or "1"),
             clean_text(str(fields.get(CLASSIFICATION_KILLER_COLUMN, ""))),
             as_excel_number(fields.get(CLASSIFICATION_DIFFICULTY_COLUMN, "")),
         ]
         worksheet.append(row)
 
-    header_fill = PatternFill("solid", fgColor="6F4A8E")
-    header_font = Font(bold=True, color="FFFFFF")
-    thin = Side(style="thin", color="777777")
+    header_fill = PatternFill("solid", fgColor="FF00B0F0")
+    number_fill = PatternFill("solid", fgColor="FFF3F3F3")
+    header_font = Font(name="맑은 고딕", size=9, bold=True, color="000000")
+    body_font = Font(name="맑은 고딕", size=9, color="000000")
+    number_font = Font(name="맑은 고딕", size=9, bold=True, color="000000")
+    thin = Side(style="thin")
     border = Border(top=thin, bottom=thin, left=thin, right=thin)
     for cell in worksheet[1]:
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         cell.border = border
-    for row in worksheet.iter_rows(min_row=2, max_row=max_number + 1, max_col=len(CLASSIFICATION_EXPORT_COLUMNS)):
+    for row in worksheet.iter_rows(
+        min_row=2,
+        max_row=CLASSIFICATION_EXPORT_ROWS + 1,
+        max_col=len(CLASSIFICATION_EXPORT_COLUMNS),
+    ):
         for cell in row:
+            cell.font = body_font
             cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             cell.border = border
-        for cell in row[4:9]:
-            cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        row[0].fill = number_fill
+        row[0].font = number_font
 
-    widths = [10, 8, 8, 12, 34, 34, 34, 34, 34, 16, 24, 24]
+    widths = [7.5, 4.5, 4.5, 9.5, 22.69921875, 22.69921875, 22.69921875, 22.69921875, 22.69921875, 14.5, 20, 14.69921875]
     for index, width in enumerate(widths, start=1):
         worksheet.column_dimensions[worksheet.cell(1, index).column_letter].width = width
-    worksheet.freeze_panes = "A2"
 
-    back_data = workbook.create_sheet("backData")
-    back_data.append(["소단원", "대단원", "코드", "소단원명"])
-    for unit in catalog_units_for_subject(subject):
+    back_data = workbook.create_sheet(CLASSIFICATION_BACKDATA_SHEET_NAME)
+    back_data.sheet_state = "hidden"
+    back_data.sheet_format.defaultRowHeight = 17.4
+    unit_labels = [classification_unit_label(unit.get("label", "") or unit.get("name", "")) for unit in catalog_units_for_subject(subject)]
+    objective_values = [0, 1]
+    killer_values = ["해당 없음", "준킬러", "킬러"]
+    difficulty_values = list(range(1, 10))
+    point_values = [2, 3]
+    answer_values = list(range(1, 6))
+    backdata_rows = max(len(unit_labels), len(difficulty_values), len(answer_values))
+    for index in range(backdata_rows):
         back_data.append(
             [
-                unit.get("label", ""),
-                unit.get("chapter_title", ""),
-                unit.get("code", ""),
-                unit.get("name", ""),
+                unit_labels[index] if index < len(unit_labels) else None,
+                objective_values[index] if index < len(objective_values) else None,
+                killer_values[index] if index < len(killer_values) else None,
+                difficulty_values[index] if index < len(difficulty_values) else None,
+                point_values[index] if index < len(point_values) else None,
+                answer_values[index] if index < len(answer_values) else None,
             ]
         )
-    for cell in back_data[1]:
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-        cell.border = border
-    for row in back_data.iter_rows(min_row=2, max_col=4):
-        for cell in row:
-            cell.border = border
-            cell.alignment = Alignment(vertical="center", wrap_text=True)
-    back_data.column_dimensions["A"].width = 56
-    back_data.column_dimensions["B"].width = 28
-    back_data.column_dimensions["C"].width = 12
-    back_data.column_dimensions["D"].width = 40
+    back_data.column_dimensions["A"].width = 89 if subject == "세계지리" else 42.69921875
+    for column in "BCDEF":
+        back_data.column_dimensions[column].width = 13
 
-    if back_data.max_row > 1:
-        formula = f"'backData'!$A$2:$A${back_data.max_row}"
+    validations = [
+        ("E2:I21", "backData!$A:$A"),
+        ("J2:J21", "backData!$B$1:$B$2"),
+        ("K2:K21", "backData!$C$1:$C$3"),
+        ("L2:L21", "backData!$D$1:$D$9"),
+        ("B2:B21", "backData!$E$1:$E$2"),
+        ("C2:C21", "backData!$F$1:$F$5"),
+    ]
+    for cell_range, formula in validations:
         validation = DataValidation(type="list", formula1=formula, allow_blank=True)
         worksheet.add_data_validation(validation)
-        validation.add(f"E2:I{max_number + 1}")
+        validation.add(cell_range)
 
     output_path = job_dir / filename
     workbook.save(output_path)
@@ -2370,7 +2414,7 @@ def export_job_classification(job_id: str):
         json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     xlsx_path = write_classification_xlsx(job_dir, solutions, subject)
-    download_name = f"{job_id}_classification_table.xlsx"
+    download_name = classification_filename(payload.get("filename"))
     return send_file(
         xlsx_path,
         as_attachment=True,
@@ -2585,7 +2629,7 @@ def api_gemini_defaults():
         {
             "has_api_key": bool(configured_setting_text(settings, "gemini_api_key", "GEMINI_API_KEY")),
             "subject": normalize_subject(
-                configured_setting_text(settings, "gemini_subject", "GEMINI_SUBJECT") or "한국지리"
+                configured_setting_text(settings, "gemini_subject", "GEMINI_SUBJECT") or DEFAULT_GEOGRAPHY_SUBJECT
             ),
             "model": normalize_gemini_model(configured_model),
             "max_requests": clean_int(
@@ -2636,7 +2680,7 @@ def prepare_split_job_request() -> dict[str, object]:
     gemini_subject = normalize_subject(
         clean_text(request.form.get("gemini_subject"))
         or configured_setting_text(local_settings, "gemini_subject", "GEMINI_SUBJECT")
-        or "한국지리"
+        or DEFAULT_GEOGRAPHY_SUBJECT
     )
     gemini_api_key = clean_text(request.form.get("gemini_api_key")) or configured_setting_text(
         local_settings, "gemini_api_key", "GEMINI_API_KEY"
