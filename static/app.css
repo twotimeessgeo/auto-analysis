@@ -1214,14 +1214,15 @@
 
 .classification-matrix {
   display: grid;
-  grid-template-columns: 52px 62px 62px 112px repeat(5, minmax(220px, 1fr)) 62px 104px 74px;
+  grid-template-columns: 52px 62px 62px repeat(5, minmax(260px, 1fr)) 62px 104px 74px;
   gap: 4px;
-  min-width: 1500px;
+  min-width: 1740px;
 }
 
 .classification-head-cell,
 .classification-number-cell,
-.classification-edit-cell {
+.classification-edit-cell,
+.classification-unit-cell {
   min-height: 36px;
   border: var(--tw-border);
   background: #fff;
@@ -1246,6 +1247,12 @@
   display: grid;
 }
 
+.classification-unit-cell {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+
 .classification-edit-cell input,
 .classification-edit-cell select,
 .classification-field input,
@@ -1258,6 +1265,7 @@
   color: var(--tw-ink);
   font-weight: 820;
   outline: 0;
+  appearance: none;
 }
 
 .classification-edit-cell input,
@@ -1268,6 +1276,104 @@
 
 .classification-edit-cell.is-unit input {
   text-align: left;
+}
+
+.classification-unit-picker {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 7px 9px;
+  border: 0;
+  background: transparent;
+  color: var(--tw-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 850;
+  line-height: 1.22;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.classification-unit-picker:empty::before {
+  content: "소단원 선택";
+  color: var(--tw-muted);
+}
+
+.classification-unit-picker:focus {
+  outline: 2px solid var(--tw-ink);
+  outline-offset: -2px;
+}
+
+.classification-unit-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  display: none;
+  width: min(520px, max(100%, 420px));
+  max-height: 340px;
+  border: var(--tw-border);
+  background: #fff;
+  box-shadow: 0 12px 24px rgba(23, 23, 23, 0.16);
+}
+
+.classification-unit-menu.is-open {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.classification-unit-search {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: var(--tw-border);
+  background: var(--tw-panel-soft);
+  color: var(--tw-ink);
+  font-weight: 850;
+  outline: 0;
+}
+
+.classification-unit-options {
+  display: grid;
+  gap: 2px;
+  max-height: 296px;
+  overflow: auto;
+  padding: 6px;
+}
+
+.classification-unit-option,
+.classification-unit-empty {
+  min-height: 34px;
+  padding: 8px 9px;
+  border: 0;
+  background: #fff;
+  color: var(--tw-ink);
+  font-weight: 820;
+  line-height: 1.25;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.classification-unit-option {
+  cursor: pointer;
+}
+
+.classification-unit-option:hover,
+.classification-unit-option:focus {
+  background: var(--tw-ink);
+  color: #fff;
+  outline: 0;
+}
+
+.classification-unit-option.is-empty {
+  color: var(--tw-muted);
+}
+
+.classification-unit-empty {
+  color: var(--tw-muted);
 }
 
 .classification-edit-cell input:focus,
@@ -1459,6 +1565,31 @@
   line-height: 1.15;
 }
 
+.classification-subject-switch,
+.classification-panel-subjects {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: var(--tw-border);
+  background: #fff;
+}
+
+.classification-subject-button {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--tw-ink);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.classification-subject-button.is-active {
+  background: var(--tw-ink);
+  color: #fff;
+}
+
 .classification-field-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1477,7 +1608,19 @@
   grid-column: 1 / -1;
 }
 
+.classification-unit-cell.is-wide {
+  grid-column: 1 / -1;
+  gap: 4px;
+}
+
 .classification-field span {
+  padding: 7px 8px 0;
+  color: var(--tw-muted);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.classification-unit-label {
   padding: 7px 8px 0;
   color: var(--tw-muted);
   font-size: 0.78rem;

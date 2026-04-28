@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/design-system/base.css" />
     <link rel="stylesheet" href="/design-system/components.css" />
     <link rel="stylesheet" href="/design-system/patterns.css" />
-    <link rel="stylesheet" href="/static/app.css?v=27" />
+    <link rel="stylesheet" href="/static/app.css?v=28" />
   </head>
   <body>
     <main class="tw-page app-page">
@@ -609,7 +609,8 @@
               </div>
               <span class="app-collapse-label">접기</span>
             </summary>
-            <div class="classification-tools">
+            <div class="classification-tools" id="classificationTools">
+              <div class="classification-subject-switch" id="classificationSubjectSwitch" aria-label="분류 과목 선택"></div>
               <span id="classificationStatus" class="cut-warning">단원 목록 로딩 중</span>
             </div>
             <div id="classificationTable" class="classification-table"></div>
@@ -725,6 +726,6 @@
     </main>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script src="/static/app.js?v=32"></script>
+    <script src="/static/app.js?v=33"></script>
   </body>
 </html>

@@ -53,6 +53,8 @@ const solutionOverviewTable = document.querySelector("#solutionOverviewTable");
 const solutionClassificationOverview = document.querySelector("#solutionClassificationOverview");
 const solutionClassificationPanel = document.querySelector("#solutionClassificationPanel");
 const classificationTable = document.querySelector("#classificationTable");
+const classificationTools = document.querySelector("#classificationTools");
+const classificationSubjectSwitch = document.querySelector("#classificationSubjectSwitch");
 const classificationStatus = document.querySelector("#classificationStatus");
 const exportClassificationButton = document.querySelector("#exportClassificationButton");
 const saveSolutionsButton = document.querySelector("#saveSolutionsButton");
@@ -176,6 +178,7 @@ const classificationSubunitKeys = [1, 2, 3, 4, 5].map((rank) => `소단원 - ${r
 const classificationObjectiveKey = "객(1)/주관식(0)";
 const classificationKillerKey = "킬러여부\n(해당 없음/준킬러/킬러)";
 const classificationDifficultyKey = "난이도\n(1(下下)~9(上上))";
+const classificationSubjects = ["세계지리", "한국지리"];
 const classificationKeys = [
   "배점",
   "선택과목",
@@ -1495,16 +1498,15 @@ function ensureClassificationFieldnames() {
 function defaultClassificationSubject() {
   const fromCurrent = solutionForNumber(currentSolutionNumber)?.fields?.["선택과목"];
   const fromArchive = archiveSubject?.value;
-  const fromGemini = geminiSubjectInput?.value;
-  const subject = [fromCurrent, fromArchive, fromGemini].find((item) =>
-    ["한국지리", "세계지리"].includes(String(item || "").trim()),
+  const subject = [fromCurrent, fromArchive].find((item) =>
+    classificationSubjects.includes(String(item || "").trim()),
   );
-  return subject || "한국지리";
+  return subject || "세계지리";
 }
 
 function classificationSubjectForSolution(solution) {
   const subject = String(solution?.fields?.["선택과목"] || "").trim();
-  return ["한국지리", "세계지리"].includes(subject) ? subject : defaultClassificationSubject();
+  return classificationSubjects.includes(subject) ? subject : defaultClassificationSubject();
 }
 
 function defaultPointForSolution(solution) {
@@ -1538,20 +1540,137 @@ function unitsForSubject(subject) {
   return unitCatalog?.[subject]?.units || [];
 }
 
-function allClassificationUnits() {
-  return Object.values(unitCatalog || {}).flatMap((entry) => entry?.units || []);
+function unitDisplayText(unit) {
+  return unit?.label || unit?.name || "";
 }
 
-function createUnitDatalist(id, units) {
-  const datalist = document.createElement("datalist");
-  datalist.id = id;
-  units.forEach((unit) => {
-    const option = document.createElement("option");
-    option.value = unit.label || unit.name || "";
-    option.label = [unit.chapter_title, unit.name].filter(Boolean).join(" · ");
-    datalist.appendChild(option);
+function closeClassificationMenus(except = null) {
+  document.querySelectorAll(".classification-unit-menu.is-open").forEach((menu) => {
+    if (menu !== except) menu.classList.remove("is-open");
   });
-  return datalist;
+}
+
+function renderUnitMenuOptions(menu, solution, key, filterText = "") {
+  const list = menu.querySelector(".classification-unit-options");
+  if (!list) return;
+  const subject = classificationSubjectForSolution(solution);
+  const query = String(filterText || "").trim().toLowerCase();
+  const units = unitsForSubject(subject).filter((unit) => {
+    const haystack = [unit.code, unit.name, unit.label].filter(Boolean).join(" ").toLowerCase();
+    return !query || haystack.includes(query);
+  });
+
+  list.innerHTML = "";
+  const emptyButton = document.createElement("button");
+  emptyButton.type = "button";
+  emptyButton.className = "classification-unit-option is-empty";
+  emptyButton.textContent = "선택 해제";
+  emptyButton.addEventListener("click", () => {
+    setClassificationField(solution, key, "", { refreshOverview: true });
+    closeClassificationMenus();
+  });
+  list.appendChild(emptyButton);
+
+  units.forEach((unit) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "classification-unit-option";
+    option.textContent = unitDisplayText(unit);
+    option.title = unitDisplayText(unit);
+    option.addEventListener("click", () => {
+      setClassificationField(solution, key, unitDisplayText(unit), { refreshOverview: true });
+      closeClassificationMenus();
+    });
+    list.appendChild(option);
+  });
+
+  if (!units.length) {
+    const empty = document.createElement("span");
+    empty.className = "classification-unit-empty";
+    empty.textContent = "검색 결과 없음";
+    list.appendChild(empty);
+  }
+}
+
+function buildUnitPicker(solution, key, label = "") {
+  const wrapper = document.createElement("div");
+  wrapper.className = "classification-unit-cell";
+  if (label) {
+    const span = document.createElement("span");
+    span.className = "classification-unit-label";
+    span.textContent = label;
+    wrapper.appendChild(span);
+  }
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "classification-unit-picker";
+  const current = solution.fields?.[key] || "";
+  button.textContent = current || "소단원 선택";
+  button.title = current || "소단원 선택";
+
+  const menu = document.createElement("div");
+  menu.className = "classification-unit-menu";
+
+  const search = document.createElement("input");
+  search.type = "search";
+  search.className = "classification-unit-search";
+  search.placeholder = "소단원 검색";
+
+  const options = document.createElement("div");
+  options.className = "classification-unit-options";
+  menu.append(search, options);
+  renderUnitMenuOptions(menu, solution, key);
+
+  button.addEventListener("click", () => {
+    const willOpen = !menu.classList.contains("is-open");
+    closeClassificationMenus(menu);
+    menu.classList.toggle("is-open", willOpen);
+    if (willOpen) {
+      search.value = "";
+      renderUnitMenuOptions(menu, solution, key);
+      search.focus();
+    }
+  });
+
+  search.addEventListener("input", () => renderUnitMenuOptions(menu, solution, key, search.value));
+
+  wrapper.append(button, menu);
+  return wrapper;
+}
+
+function setClassificationSubjectForAll(subject) {
+  if (!classificationSubjects.includes(subject)) return;
+  currentSolutions.forEach((solution) => {
+    ensureClassificationFields(solution);
+    if (solution.fields["선택과목"] !== subject) {
+      solution.fields["선택과목"] = subject;
+      classificationSubunitKeys.forEach((key) => {
+        solution.fields[key] = "";
+      });
+      const defaultPoint = defaultPointForSolution(solution);
+      if (defaultPoint) solution.fields["배점"] = defaultPoint;
+    }
+  });
+  setSolutionsDirty(true);
+  closeClassificationMenus();
+  renderClassificationOverview();
+  const current = solutionForNumber(currentSolutionNumber);
+  if (current) renderClassificationPanel(current);
+}
+
+function renderClassificationSubjectSwitch() {
+  if (!classificationSubjectSwitch) return;
+  const activeSubject = defaultClassificationSubject();
+  classificationSubjectSwitch.innerHTML = "";
+  classificationSubjects.forEach((subject) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `classification-subject-button${subject === activeSubject ? " is-active" : ""}`;
+    button.textContent = subject;
+    button.addEventListener("click", () => setClassificationSubjectForAll(subject));
+    classificationSubjectSwitch.appendChild(button);
+  });
 }
 
 function setClassificationField(solution, key, value, options = {}) {
@@ -1621,9 +1740,7 @@ function renderClassificationPanel(solution) {
   if (!solutionClassificationPanel || !solution) return;
   ensureClassificationFields(solution);
   const subject = classificationSubjectForSolution(solution);
-  const datalistId = `classificationUnitOptions-${solution.number}`;
   solutionClassificationPanel.innerHTML = "";
-  solutionClassificationPanel.appendChild(createUnitDatalist(datalistId, unitsForSubject(subject)));
 
   const head = document.createElement("div");
   head.className = "classification-panel-head";
@@ -1633,14 +1750,21 @@ function renderClassificationPanel(solution) {
       <h4>분류표 입력</h4>
     </div>
   `;
+  const subjectSwitch = document.createElement("div");
+  subjectSwitch.className = "classification-panel-subjects";
+  classificationSubjects.forEach((item) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `classification-subject-button${item === subject ? " is-active" : ""}`;
+    button.textContent = item;
+    button.addEventListener("click", () => setClassificationSubjectForAll(item));
+    subjectSwitch.appendChild(button);
+  });
+  head.appendChild(subjectSwitch);
 
   const grid = document.createElement("div");
   grid.className = "classification-field-grid";
   grid.append(
-    buildClassificationControl(solution, "선택과목", "선택과목", {
-      type: "select",
-      choices: [["한국지리", "한국지리"], ["세계지리", "세계지리"]],
-    }),
     buildClassificationControl(solution, "배점", "배점", { type: "number", min: "1", max: "5", step: "1" }),
     buildClassificationControl(solution, "정답", "정답"),
     buildClassificationControl(solution, classificationObjectiveKey, "객/주관", {
@@ -1661,10 +1785,9 @@ function renderClassificationPanel(solution) {
   );
 
   classificationSubunitKeys.forEach((key, index) => {
-    grid.appendChild(buildClassificationControl(solution, key, `소단원 ${index + 1}순위`, {
-      list: datalistId,
-      wide: true,
-    }));
+    const picker = buildUnitPicker(solution, key, `소단원 ${index + 1}순위`);
+    picker.classList.add("is-wide");
+    grid.appendChild(picker);
   });
 
   solutionClassificationPanel.append(head, grid);
@@ -1681,11 +1804,9 @@ function renderClassificationOverview() {
   solutionClassificationOverview.hidden = false;
   exportClassificationButton.disabled = false;
   classificationTable.innerHTML = "";
+  renderClassificationSubjectSwitch();
 
-  const allUnitsId = "classificationAllUnitOptions";
-  classificationTable.appendChild(createUnitDatalist(allUnitsId, allClassificationUnits()));
-
-  const headers = ["문항", "배점", "정답", "과목", "1순위", "2순위", "3순위", "4순위", "5순위", "객", "킬러", "난이도"];
+  const headers = ["문항", "배점", "정답", "1순위", "2순위", "3순위", "4순위", "5순위", "객", "킬러", "난이도"];
   const table = document.createElement("div");
   table.className = "classification-matrix";
 
@@ -1708,8 +1829,7 @@ function renderClassificationOverview() {
     const controls = [
       ["배점", { type: "number", min: "1", max: "5", step: "1" }],
       ["정답", {}],
-      ["선택과목", { type: "select", choices: [["한국지리", "한국지리"], ["세계지리", "세계지리"]] }],
-      ...classificationSubunitKeys.map((key) => [key, { list: allUnitsId }]),
+      ...classificationSubunitKeys.map((key) => [key, { type: "unit" }]),
       [classificationObjectiveKey, { type: "select", choices: [["1", "1"], ["0", "0"]] }],
       [classificationKillerKey, { type: "select", choices: [["", "-"], ["해당 없음", "해당 없음"], ["준킬러", "준킬러"], ["킬러", "킬러"]] }],
       [classificationDifficultyKey, {
@@ -1719,6 +1839,11 @@ function renderClassificationOverview() {
     ];
 
     controls.forEach(([key, options]) => {
+      if (options.type === "unit") {
+        table.appendChild(buildUnitPicker(solution, key));
+        return;
+      }
+
       let input;
       if (options.type === "select") {
         input = document.createElement("select");
@@ -1757,9 +1882,10 @@ function renderClassificationOverview() {
 
   classificationTable.appendChild(table);
   if (classificationStatus) {
-    const unitCount = allClassificationUnits().length;
+    const subject = defaultClassificationSubject();
+    const unitCount = unitsForSubject(subject).length;
     classificationStatus.textContent = unitCatalogReady
-      ? `단원 목록 ${unitCount}개 로딩됨 · 현재 선택값으로 XLSX 내보내기 가능`
+      ? `${subject} 단원 ${unitCount}개 · 현재 선택값으로 XLSX 내보내기 가능`
       : "단원 목록을 불러오지 못했습니다. 직접 입력은 가능합니다.";
   }
 }
@@ -1771,7 +1897,8 @@ async function loadUnitCatalog() {
     unitCatalog = await response.json();
     unitCatalogReady = true;
     if (classificationStatus) {
-      classificationStatus.textContent = `단원 목록 ${allClassificationUnits().length}개 로딩됨`;
+      const subject = defaultClassificationSubject();
+      classificationStatus.textContent = `${subject} 단원 ${unitsForSubject(subject).length}개 로딩됨`;
     }
   } catch (error) {
     unitCatalog = {};
@@ -2864,6 +2991,16 @@ if (clearGeminiProfileButton) {
 if (geminiModelInput) {
   geminiModelInput.addEventListener("change", clampGeminiConcurrencyForModel);
 }
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".classification-unit-cell")) {
+    closeClassificationMenus();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeClassificationMenus();
+});
 
 archiveForm.addEventListener("submit", async (event) => {
   event.preventDefault();

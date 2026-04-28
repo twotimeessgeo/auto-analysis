@@ -921,7 +921,7 @@ def infer_classification_subject(solutions: list[dict[str, object]], requested: 
         subject = clean_text(str(fields.get("선택과목", "")))
         if subject in {"한국지리", "세계지리"}:
             return subject
-    return "한국지리"
+    return "세계지리"
 
 
 def catalog_units_for_subject(subject: str) -> list[dict[str, object]]:
