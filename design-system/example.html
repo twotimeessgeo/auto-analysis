@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TWOTIMESS Design System Example</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link rel="stylesheet" href="./tokens.css" />
+    <link rel="stylesheet" href="./base.css" />
+    <link rel="stylesheet" href="./components.css" />
+    <link rel="stylesheet" href="./patterns.css" />
+  </head>
+  <body>
+    <div class="tw-page tw-stack">
+      <header class="tw-hero">
+        <div class="tw-hero-copy">
+          <p class="tw-eyebrow">TWOTIMESS DESIGN SYSTEM</p>
+          <nav class="tw-switch" aria-label="버전 선택 예시">
+            <a class="tw-switch-item is-active" href="#">세계지리</a>
+            <a class="tw-switch-item" href="#">한국지리</a>
+            <button type="button" class="tw-switch-item">경제지리</button>
+          </nav>
+          <h1 class="tw-hero-title">투타임즈의 기후머신</h1>
+          <p class="tw-hero-text">
+            흑백 기반, 직각 패널, 큰 제목, 조용한 본문, 데이터 중심 구조를 갖는
+            TWOTIMESS UX의 공유용 예시 화면입니다.
+          </p>
+        </div>
+        <aside class="tw-hero-note">
+          <p class="tw-kicker">현재 기준</p>
+          <strong>114개 지역</strong>
+          <span>Open-Meteo 1991-2020 API 기준</span>
+        </aside>
+      </header>
+
+      <section class="tw-panel">
+        <div class="tw-section-heading">
+          <div>
+            <p class="tw-kicker">1. Controls</p>
+            <h2 class="tw-section-title">검색하고 정렬하고 필터링하기</h2>
+          </div>
+          <div class="tw-badge is-solid">4개 선택됨</div>
+        </div>
+
+        <div class="tw-controls-grid">
+          <label class="tw-field">
+            <span>지역 검색</span>
+            <input type="search" placeholder="예: 파리, 제주, Aw" />
+          </label>
+          <label class="tw-field">
+            <span>지역 정렬</span>
+            <select>
+              <option>가나다순</option>
+              <option>연 강수량 많은 순</option>
+            </select>
+          </label>
+          <div class="tw-row">
+            <button type="button" class="tw-button">랜덤 선택</button>
+            <button type="button" class="tw-button">선택 해제</button>
+          </div>
+        </div>
+
+        <div class="tw-row" style="margin-top: 16px;">
+          <button type="button" class="tw-chip is-active">전체</button>
+          <button type="button" class="tw-chip">유럽</button>
+          <button type="button" class="tw-chip">아시아</button>
+          <button type="button" class="tw-chip">Af</button>
+        </div>
+      </section>
+
+      <section class="tw-panel">
+        <div class="tw-section-heading">
+          <div>
+            <p class="tw-kicker">2. Data Card</p>
+            <h2 class="tw-section-title">표와 그래프를 함께 배치하기</h2>
+          </div>
+        </div>
+
+        <article class="tw-data-card">
+          <div class="tw-data-card-top">
+            <div class="tw-stack" style="gap: 14px;">
+              <div>
+                <h3 class="tw-card-title">브라질리아</h3>
+              </div>
+              <div class="tw-meta-grid">
+                <span class="tw-meta-pill">아메리카</span>
+                <span class="tw-meta-pill">남반구</span>
+                <span class="tw-meta-pill">기후 Aw</span>
+              </div>
+              <div class="tw-stat-grid">
+                <span class="tw-stat-pill">연평균 기온 22°C</span>
+                <span class="tw-stat-pill">연강수량 1,394.7 mm</span>
+                <span class="tw-stat-pill">좌표 남위 15.79° · 서경 47.88°</span>
+              </div>
+            </div>
+
+            <div class="tw-chart-panel">
+              <strong>기후 그래프 자리</strong>
+              <div style="height: 220px; border: var(--tw-border); background: #fff;"></div>
+              <div class="tw-footnotes">
+                <div>* 그래프는 검정/회색 중심으로 구성합니다.</div>
+                <div>** 제목에서 설명한 항목은 축에서 반복하지 않습니다.</div>
+              </div>
+            </div>
+          </div>
+
+          <table class="tw-table">
+            <thead>
+              <tr>
+                <th>월</th>
+                <th>평균 기온</th>
+                <th>강수량</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1월</td>
+                <td>22.3°C</td>
+                <td>224.1 mm</td>
+              </tr>
+              <tr>
+                <td>7월</td>
+                <td>20.1°C</td>
+                <td>0.4 mm</td>
+              </tr>
+              <tr>
+                <td>연간</td>
+                <td>22°C</td>
+                <td>1,394.7 mm</td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+      </section>
+    </div>
+  </body>
+</html>

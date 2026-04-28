@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.DS_Store
+*.pdf
+
+gui_runs/
+archives/
+local_settings.json
+gui_server.log
+gui_server_*.log
+question_crops*/

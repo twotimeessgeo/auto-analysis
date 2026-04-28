@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auto Analysis</title>
+    <script>
+      if (window.location.protocol === "file:") {
+        window.location.replace("http://127.0.0.1:5057/");
+      }
+    </script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link rel="stylesheet" href="/design-system/tokens.css" />
+    <link rel="stylesheet" href="/design-system/base.css" />
+    <link rel="stylesheet" href="/design-system/components.css" />
+    <link rel="stylesheet" href="/design-system/patterns.css" />
+    <link rel="stylesheet" href="/static/app.css?v=26" />
+  </head>
+  <body>
+    <main class="tw-page app-page">
+      <header class="tw-hero app-hero">
+        <div class="tw-hero-copy">
+          <p class="tw-eyebrow">EXAM QUESTION CUTTER</p>
+          <h1 class="tw-hero-title">Auto Analysis</h1>
+          <p class="tw-hero-text">PDF를 넣고, 문항별 해설 CSV를 생성합니다.</p>
+        </div>
+        <aside class="tw-hero-note app-mode-panel">
+          <p class="tw-kicker">작업 선택</p>
+          <div class="app-mode-actions" aria-label="작업 선택">
+            <button class="tw-button is-active" type="button" data-app-jump="cutter">
+              <i data-lucide="scissors"></i>
+              <span>이미지 커터</span>
+            </button>
+            <button class="tw-button" type="button" data-app-jump="cut">
+              <i data-lucide="calculator"></i>
+              <span>컷 예측기</span>
+            </button>
+            <button class="tw-button" type="button" data-app-jump="questions">
+              <i data-lucide="search"></i>
+              <span>기출 검색</span>
+            </button>
+            <button class="tw-button" type="button" data-app-jump="solutions">
+              <i data-lucide="table"></i>
+              <span>CSV 해설</span>
+            </button>
+          </div>
+        </aside>
+      </header>
+
+      <section class="app-conversion-grid" id="conversionBoard">
+        <section class="tw-panel app-workbench">
+          <div class="tw-section-heading compact">
+            <div>
+              <p class="tw-kicker">1. INPUT</p>
+              <h2 class="tw-section-title">시험지 PDF</h2>
+            </div>
+            <span class="tw-badge" id="statusBadge">대기</span>
+          </div>
+
+          <form id="splitForm" class="app-form">
+            <label class="app-dropzone" id="dropzone">
+              <input id="pdfInput" name="pdf" type="file" accept="application/pdf,.pdf" />
+              <span class="app-dropzone-icon" aria-hidden="true">
+                <i data-lucide="file-up"></i>
+              </span>
+              <span class="app-dropzone-title" id="fileLabel">PDF 선택</span>
+              <span class="app-dropzone-meta" id="fileMeta">파일을 여기에 놓아도 됩니다</span>
+            </label>
+
+            <div class="tw-controls-grid app-controls">
+              <label class="tw-field">
+                <span>문항 수</span>
+                <input name="expected_questions" type="number" min="1" max="200" value="20" />
+              </label>
+              <label class="tw-field">
+                <span>해상도</span>
+                <select name="dpi">
+                  <option value="200">200 dpi</option>
+                  <option value="240" selected>240 dpi</option>
+                  <option value="300">300 dpi</option>
+                </select>
+              </label>
+              <label class="app-check">
+                <input name="strip_final_notes" type="checkbox" checked />
+                <span>마지막 안내문 제외</span>
+              </label>
+            </div>
+
+            <div class="app-panel-divider"></div>
+
+            <div class="tw-section-heading compact">
+              <div>
+                <p class="tw-kicker">GEMINI</p>
+                <h3 class="app-subtitle">문항별 해설 자동 생성</h3>
+              </div>
+            </div>
+
+            <label class="app-check">
+              <input name="run_gemini_auto" type="checkbox" checked />
+              <span>PDF 업로드 후 자동으로 각 문항 해설 생성</span>
+            </label>
+
+            <div class="tw-controls-grid app-controls">
+              <label class="tw-field">
+                <span>과목</span>
+                <select name="gemini_subject">
+                  <option value="한국지리">한국지리</option>
+                  <option value="세계지리">세계지리</option>
+                </select>
+              </label>
+              <label class="tw-field">
+                <span>Gemini API 키</span>
+                <input name="gemini_api_key" type="password" autocomplete="off" placeholder="Gemini API 키 입력" />
+              </label>
+              <label class="tw-field">
+                <span>모델</span>
+                <select name="gemini_model">
+                  <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                  <option value="gemini-3.1-pro-preview" selected>Gemini 3.1 Pro Preview</option>
+                  <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
+                  <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                  <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                  <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+                  <option value="gemini-flash-latest">gemini-flash-latest</option>
+                  <option value="gemini-pro-latest">gemini-pro-latest</option>
+                </select>
+              </label>
+              <label class="tw-field">
+                <span>최대 요청 수</span>
+                <input name="gemini_max_requests" type="number" min="1" max="20" value="20" />
+              </label>
+              <label class="tw-field">
+                <span>동시 요청 수</span>
+                <input name="gemini_concurrency" type="number" min="1" max="5" value="3" />
+              </label>
+            </div>
+
+            <label class="tw-field">
+              <span>커스텀 프롬프트 (비워두면 기본값)</span>
+              <textarea name="gemini_prompt" rows="8" placeholder='문항별 JSON 출력 전용 프롬프트. 비워두면 기본 프롬프트(강한 JSON 규칙 포함)가 사용됩니다.'></textarea>
+            </label>
+
+            <div class="tw-row app-actions" id="geminiProfileActions">
+              <button class="tw-button" type="button" id="saveGeminiProfileButton">
+                <i data-lucide="save"></i>
+                <span>API 키/프롬프트 저장</span>
+              </button>
+              <button class="tw-button" type="button" id="clearGeminiProfileButton">
+                <i data-lucide="trash-2"></i>
+                <span>저장 내용 삭제</span>
+              </button>
+              <span class="cut-warning" id="geminiProfileStatus" aria-live="polite"></span>
+            </div>
+
+            <div class="tw-row app-actions">
+              <button class="tw-button app-primary" type="submit">
+                <i data-lucide="scissors"></i>
+                <span>자르기</span>
+              </button>
+              <button class="tw-button" type="button" id="resetButton">
+                <i data-lucide="rotate-ccw"></i>
+                <span>초기화</span>
+              </button>
+            </div>
+          </form>
+
+          <section class="app-error app-live-progress" id="errorPanel" hidden>
+            <div class="tw-section-heading compact">
+              <div>
+                <p class="tw-kicker">PDF / GEMINI STATUS</p>
+                <h3 class="app-subtitle">진행 상황</h3>
+              </div>
+              <button class="tw-button" type="button" id="openErrorFolderButton" hidden>
+                <i data-lucide="folder-open"></i>
+                <span>결과 폴더 열기</span>
+              </button>
+            </div>
+            <div id="errorMeta" class="app-error-meta" aria-live="polite"></div>
+            <section class="app-error-progress" id="errorProgress" aria-live="polite">
+              <h3 class="app-error-progress-title">PDF/Gemini 진행 로그</h3>
+              <ol id="errorProgressList" class="app-error-progress-list"></ol>
+            </section>
+            <pre id="errorText"></pre>
+          </section>
+
+          <div class="app-panel-divider"></div>
+
+          <form id="imageForm" class="image-form">
+            <div class="tw-section-heading compact">
+              <div>
+                <p class="tw-kicker">MANUAL IMAGES</p>
+                <h3 class="app-subtitle">문항 이미지 직접 업로드</h3>
+              </div>
+            </div>
+            <label class="image-upload" id="imageDropzone">
+              <input
+                id="imageInput"
+                name="images"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/tiff,image/bmp"
+                multiple
+              />
+              <span class="image-upload-icon" aria-hidden="true">
+                <i data-lucide="images"></i>
+              </span>
+              <span class="image-upload-title" id="imageLabel">문항 이미지 선택</span>
+              <span class="image-upload-meta" id="imageMeta">파일명 순서대로 q01, q02… 저장</span>
+            </label>
+            <div class="tw-row app-actions">
+              <button class="tw-button" type="submit">
+                <i data-lucide="image-plus"></i>
+                <span>이미지 적용</span>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="tw-panel app-results" id="resultsPanel" hidden>
+          <div class="tw-section-heading compact">
+            <div>
+              <p class="tw-kicker">2. OUTPUT</p>
+              <h2 class="tw-section-title">문항 이미지</h2>
+            </div>
+            <div class="tw-row">
+              <a class="tw-button" id="downloadButton" href="#">
+                <i data-lucide="download"></i>
+                <span>ZIP</span>
+              </a>
+              <button class="tw-button" type="button" id="openFolderButton">
+                <i data-lucide="folder-open"></i>
+                <span>결과 폴더 열기</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="app-output-grid">
+            <aside class="app-preview">
+              <div class="app-preview-frame">
+                <img id="previewImage" alt="선택한 문항 이미지" />
+              </div>
+              <div class="app-preview-meta">
+                <span class="tw-badge is-solid" id="previewName">q01.png</span>
+                <a id="manifestLink" href="#" target="_blank" rel="noreferrer">manifest.json</a>
+              </div>
+            </aside>
+            <div>
+              <div class="app-stats" id="statsRow"></div>
+              <div class="app-thumb-grid" id="thumbGrid"></div>
+            </div>
+          </div>
+
+          <div class="app-panel-divider"></div>
+
+          <section id="geminiGenerationPanel" hidden>
+            <div class="tw-section-heading compact">
+              <div>
+                <p class="tw-kicker">AUTO RESULT</p>
+                <h3 class="app-subtitle">Gemini 자동 생성 결과</h3>
+              </div>
+              <span class="tw-badge" id="geminiGenerationStatus">대기</span>
+            </div>
+            <div id="geminiGenerationSummary" class="tw-row"></div>
+            <div id="geminiGenerationLinks" class="tw-row"></div>
+            <div id="geminiGenerationProgress" class="app-error-progress" aria-live="polite">
+              <h3 class="app-error-progress-title">Gemini 진행 로그</h3>
+              <ol id="geminiGenerationProgressList" class="app-error-progress-list"></ol>
+            </div>
+            <p id="geminiGenerationWarnings" class="cut-warning" hidden></p>
+          </section>
+        </section>
+      </section>
+
+      <section class="geo-tool-area" aria-label="지리 도구">
+        <div class="tw-switch geo-tool-tabs" role="tablist" aria-label="지리 도구 선택">
+          <button
+            class="tw-switch-item is-active"
+            type="button"
+            id="cutToolTab"
+            role="tab"
+            aria-selected="true"
+            aria-controls="cutToolPanel"
+            data-geo-tab="cut"
+          >
+            컷 예측기
+          </button>
+          <button
+            class="tw-switch-item"
+            type="button"
+            id="questionToolTab"
+            role="tab"
+            aria-selected="false"
+            aria-controls="questionSearchPanel"
+            data-geo-tab="questions"
+          >
+            기출 문항 검색
+          </button>
+        </div>
+
+      <section
+        class="tw-panel cut-panel geo-tab-panel"
+        id="cutToolPanel"
+        role="tabpanel"
+        aria-labelledby="cutToolTab"
+        data-geo-panel="cut"
+      >
+        <div class="tw-section-heading compact">
+          <div>
+            <p class="tw-kicker">GEOGRAPHY CUT</p>
+            <h2 class="tw-section-title">지리 컷 예측</h2>
+          </div>
+          <span class="tw-badge" id="cutModelBadge">모델 로딩</span>
+        </div>
+
+        <form id="cutForm" class="cut-form">
+          <div class="tw-controls-grid cut-controls">
+            <label class="tw-field">
+              <span>과목</span>
+              <select id="cutSubject" name="subject">
+                <option value="한국지리">한국지리</option>
+                <option value="세계지리">세계지리</option>
+              </select>
+            </label>
+            <label class="tw-field">
+              <span>입력값</span>
+              <select id="cutMode" name="mode">
+                <option value="national">전국 정답률</option>
+                <option value="academy">재종 정답률</option>
+              </select>
+            </label>
+            <div class="cut-relation" id="cutRelation"></div>
+          </div>
+
+          <div class="cut-paste-row">
+            <label class="tw-field">
+              <span>20개 정답률 붙여넣기</span>
+              <textarea id="cutPaste" rows="3" placeholder="예: 82.1, 74.5, 61.0 ..."></textarea>
+            </label>
+            <button class="tw-button" type="button" id="applyPasteButton">
+              <i data-lucide="clipboard-paste"></i>
+              <span>적용</span>
+            </button>
+          </div>
+
+          <div class="cut-history-row">
+            <label class="tw-field">
+              <span>과거 시험 DB</span>
+              <select id="historyExamSelect"></select>
+            </label>
+            <button class="tw-button" type="button" id="loadHistoryButton">
+              <i data-lucide="database"></i>
+              <span>불러오기</span>
+            </button>
+          </div>
+
+          <div class="cut-input-grid" id="cutInputGrid"></div>
+
+          <div class="tw-row app-actions">
+            <button class="tw-button" type="button" id="fillDefaultPointsButton">
+              <i data-lucide="list-restart"></i>
+              <span>배점 기본값</span>
+            </button>
+            <button class="tw-button app-primary" type="submit">
+              <i data-lucide="calculator"></i>
+              <span>예측</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="cut-result" id="cutResult" hidden>
+          <div class="cut-card-grid" id="cutCardGrid"></div>
+          <div class="cut-result-metrics">
+            <span id="cutMean">-</span>
+            <span id="cutError">-</span>
+          </div>
+          <details class="cut-result-section app-collapse">
+            <summary class="app-collapse-summary">
+              <div>
+                <p class="tw-kicker">SCORE SCALE</p>
+                <h3 class="cut-subtitle">원점수별 표준점수·백분위</h3>
+              </div>
+              <span class="app-collapse-label">펼치기</span>
+            </summary>
+            <div class="cut-score-table" id="cutScoreTable"></div>
+          </details>
+          <details class="cut-result-section app-collapse">
+            <summary class="app-collapse-summary">
+              <div>
+                <p class="tw-kicker">HISTORICAL COMPARISON</p>
+                <h3 class="cut-subtitle">유사 과거 시험 비교</h3>
+              </div>
+              <span class="app-collapse-label">펼치기</span>
+            </summary>
+            <div class="cut-history-table" id="cutHistoryTable"></div>
+          </details>
+          <details class="cut-result-section app-collapse">
+            <summary class="app-collapse-summary">
+              <div>
+                <p class="tw-kicker">RATE CONVERSION</p>
+                <h3 class="cut-subtitle">문항별 전국·재종 환산</h3>
+              </div>
+              <span class="app-collapse-label">펼치기</span>
+            </summary>
+            <div class="cut-rate-table" id="cutRateTable"></div>
+          </details>
+          <p id="cutWarning" class="cut-warning" hidden></p>
+        </div>
+      </section>
+
+      <section
+        class="tw-panel question-search-panel geo-tab-panel"
+        id="questionSearchPanel"
+        role="tabpanel"
+        aria-labelledby="questionToolTab"
+        data-geo-panel="questions"
+        hidden
+      >
+        <div class="tw-section-heading compact">
+          <div>
+            <p class="tw-kicker">QUESTION BANK</p>
+            <h2 class="tw-section-title">기출 문항 검색</h2>
+          </div>
+          <span class="tw-badge" id="questionBankBadge">검색 대기</span>
+        </div>
+
+        <form id="questionSearchForm" class="question-search-form">
+          <div class="question-filter-grid">
+            <fieldset class="question-filter-group is-exam">
+              <legend>시험 범위</legend>
+              <div class="question-filter-fields is-exam">
+                <label class="tw-field">
+                  <span>과목</span>
+                  <select id="questionSearchSubject">
+                    <option value="">전체</option>
+                    <option value="한국지리">한국지리</option>
+                    <option value="세계지리">세계지리</option>
+                  </select>
+                </label>
+                <label class="tw-field question-exam-field">
+                  <span>시험 회차</span>
+                  <select id="questionExamSelect">
+                    <option value="">시험 전체</option>
+                  </select>
+                </label>
+                <label class="tw-field">
+                  <span>시작 연도</span>
+                  <input id="questionYearFrom" type="number" min="2010" max="2030" step="1" inputmode="numeric" />
+                </label>
+                <label class="tw-field">
+                  <span>끝 연도</span>
+                  <input id="questionYearTo" type="number" min="2010" max="2030" step="1" inputmode="numeric" />
+                </label>
+                <label class="tw-field">
+                  <span>시행월</span>
+                  <select id="questionSearchMonth">
+                    <option value="">전체</option>
+                    <option value="03">3월</option>
+                    <option value="06">6월</option>
+                    <option value="09">9월</option>
+                    <option value="11">수능</option>
+                  </select>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="question-filter-group">
+              <legend>문항 조건</legend>
+              <div class="question-filter-fields is-question">
+                <label class="tw-field">
+                  <span>문항 번호</span>
+                  <input id="questionNumber" type="number" min="1" max="20" step="1" inputmode="numeric" />
+                </label>
+                <label class="tw-field">
+                  <span>난이도</span>
+                  <select id="questionDifficulty">
+                    <option value="">전체</option>
+                    <option value="very_hard">최고난도</option>
+                    <option value="hard">고난도</option>
+                    <option value="normal">보통</option>
+                    <option value="easy">쉬움</option>
+                    <option value="unknown">정보 없음</option>
+                  </select>
+                </label>
+                <label class="tw-field">
+                  <span>자료 상태</span>
+                  <select id="questionMatchStatus">
+                    <option value="">전체</option>
+                    <option value="exact">EBSi 실측</option>
+                    <option value="inferred">보충 데이터</option>
+                    <option value="unmatched">정보 없음</option>
+                  </select>
+                </label>
+                <label class="tw-field">
+                  <span>오답률 하한</span>
+                  <input id="wrongRateMin" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+                </label>
+                <label class="tw-field">
+                  <span>오답률 상한</span>
+                  <input id="wrongRateMax" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="question-filter-group is-search">
+              <legend>검색 · 정렬</legend>
+              <div class="question-filter-fields is-search">
+                <label class="tw-field question-search-keyword">
+                  <span>검색어</span>
+                  <input id="questionKeyword" type="search" />
+                </label>
+                <label class="tw-field">
+                  <span>정렬 방식</span>
+                  <select id="questionSearchSort">
+                    <option value="latest">최신순</option>
+                    <option value="wrong_desc">오답률 높은순</option>
+                    <option value="question">문항순</option>
+                  </select>
+                </label>
+                <div class="question-search-actions">
+                  <button class="tw-button" type="button" id="questionRefreshButton">
+                    <i data-lucide="refresh-cw"></i>
+                    <span>DB 새로고침</span>
+                  </button>
+                  <button class="tw-button" type="button" id="questionSearchResetButton">
+                    <i data-lucide="rotate-ccw"></i>
+                    <span>초기화</span>
+                  </button>
+                  <button class="tw-button app-primary" type="submit">
+                    <i data-lucide="search"></i>
+                    <span>검색</span>
+                  </button>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+          <div class="question-quick-row" aria-label="빠른 검색">
+            <span>빠른 검색</span>
+            <div>
+              <button class="tw-button" type="button" data-question-preset="latest_exam">최근 수능</button>
+              <button class="tw-button" type="button" data-question-preset="hard_exact">실측 고난도</button>
+              <button class="tw-button" type="button" data-question-preset="inferred">보충 데이터</button>
+              <button class="tw-button" type="button" data-question-preset="unmatched">정보 없음</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="question-search-meta" id="questionSearchMeta"></div>
+        <div class="question-result-grid" id="questionResultGrid"></div>
+      </section>
+      </section>
+
+      <section class="tw-panel app-solutions" id="solutionsPanel">
+        <div class="tw-section-heading compact">
+          <div>
+            <p class="tw-kicker">CSV</p>
+            <h2 class="tw-section-title">해설 + 1컷</h2>
+          </div>
+          <div class="tw-row">
+            <span class="tw-badge" id="solutionDirtyBadge" hidden>수정됨</span>
+            <span class="tw-badge" id="solutionsStatusBadge">대기</span>
+            <button class="tw-button" type="button" id="saveSolutionsButton" disabled>
+              <i data-lucide="save"></i>
+              <span>수정 저장</span>
+            </button>
+          </div>
+        </div>
+
+        <form id="solutionForm" class="solution-form">
+          <label class="solution-upload" id="csvDropzone">
+            <input id="csvInput" name="csv" type="file" accept=".csv,text/csv" />
+            <span class="solution-upload-icon" aria-hidden="true">
+              <i data-lucide="table"></i>
+            </span>
+            <span class="solution-upload-title" id="csvLabel">CSV 선택</span>
+            <span class="solution-upload-meta" id="csvMeta">문항 번호 기준 매칭</span>
+          </label>
+          <button class="tw-button app-primary" type="submit">
+            <i data-lucide="panel-right-open"></i>
+            <span>CSV 적용 + 1컷</span>
+          </button>
+        </form>
+
+        <div class="solution-match-row" id="solutionMatchRow" hidden></div>
+
+        <div class="solution-viewer" id="solutionViewer" hidden>
+          <details class="solution-overview app-collapse" id="solutionOverview" open hidden>
+            <summary class="app-collapse-summary">
+              <div>
+                <p class="tw-kicker">QUESTION METRICS</p>
+                <h3 class="app-subtitle">문항 지표 일람</h3>
+              </div>
+              <span class="app-collapse-label">접기</span>
+            </summary>
+            <div class="solution-quality-strip" id="solutionQualityStrip" hidden></div>
+            <div class="solution-overview-table" id="solutionOverviewTable"></div>
+          </details>
+
+          <details class="solution-workspace app-collapse">
+            <summary class="app-collapse-summary">
+              <div>
+                <p class="tw-kicker">QUESTION VIEW</p>
+                <h3 class="app-subtitle">문항별 이미지 · 해설 편집</h3>
+              </div>
+              <span class="app-collapse-label">펼치기</span>
+            </summary>
+
+            <nav class="solution-nav" id="solutionNav" aria-label="문항 선택"></nav>
+
+            <div class="solution-layout">
+              <aside class="solution-image-panel">
+                <div class="solution-image-frame">
+                  <img id="solutionImage" alt="선택한 문항 이미지" />
+                  <div class="solution-image-empty" id="solutionImageEmpty" hidden>
+                    이미지 없음
+                  </div>
+                  <label class="inline-image-upload" id="inlineImageUpload">
+                    <input
+                      id="inlineImageInput"
+                      name="images"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/tiff,image/bmp"
+                      multiple
+                    />
+                    <i data-lucide="image-plus"></i>
+                    <span>이미지 추가</span>
+                  </label>
+                </div>
+                <div class="solution-image-meta">
+                  <span class="tw-badge is-solid" id="solutionImageName">q01.png</span>
+                </div>
+              </aside>
+
+              <article class="solution-detail-panel">
+                <div class="solution-detail-head">
+                  <div>
+                    <p class="tw-kicker">QUESTION</p>
+                    <h3 id="solutionTitle">1번</h3>
+                  </div>
+                  <span class="tw-badge is-solid" id="solutionAnswer">정답</span>
+                </div>
+                <div class="solution-metrics" id="solutionMetrics"></div>
+                <div class="solution-detail-list" id="solutionDetails"></div>
+              </article>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section class="tw-panel archive-panel">
+        <div class="tw-section-heading compact">
+          <div>
+            <p class="tw-kicker">ARCHIVE</p>
+            <h2 class="tw-section-title">시험지 정보 저장</h2>
+          </div>
+          <span class="tw-badge" id="archiveStatusBadge">대기</span>
+        </div>
+
+        <form id="archiveForm" class="archive-form">
+          <div class="tw-controls-grid archive-grid">
+            <label class="tw-field">
+              <span>시험명</span>
+              <input id="archiveTitle" name="title" type="text" placeholder="예: 27세지 6월 월례" />
+            </label>
+            <label class="tw-field">
+              <span>과목</span>
+              <input id="archiveSubject" name="subject" type="text" placeholder="예: 세계지리" />
+            </label>
+            <label class="tw-field">
+              <span>시행일</span>
+              <input id="archiveDate" name="exam_date" type="date" />
+            </label>
+          </div>
+          <label class="tw-field">
+            <span>메모</span>
+            <textarea id="archiveMemo" name="memo" rows="3" placeholder="컷, 검토 상태, 특이사항"></textarea>
+          </label>
+          <div class="archive-actions">
+            <button class="tw-button app-primary" type="submit">
+              <i data-lucide="archive"></i>
+              <span>아카이브 저장</span>
+            </button>
+            <button class="tw-button" type="button" id="refreshArchivesButton">
+              <i data-lucide="refresh-cw"></i>
+              <span>목록 새로고침</span>
+            </button>
+            <span id="archiveMessage" class="archive-message"></span>
+          </div>
+        </form>
+
+        <div class="app-panel-divider"></div>
+
+        <details class="app-collapse archive-collapse">
+          <summary class="app-collapse-summary">
+            <div>
+              <p class="tw-kicker">SAVED EXAMS</p>
+              <h3 class="app-subtitle">저장된 모의고사</h3>
+            </div>
+            <span class="app-collapse-label">펼치기</span>
+          </summary>
+          <div class="archive-list" id="archiveList"></div>
+        </details>
+      </section>
+
+    </main>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="/static/app.js?v=31"></script>
+  </body>
+</html>
